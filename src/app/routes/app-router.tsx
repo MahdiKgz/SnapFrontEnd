@@ -1,5 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
+import MapPage from "../pages/dashboard/map";
+import Overview from "../pages/dashboard/overview";
 import Home from "../pages/home";
 import LoginPage from "../pages/login";
 import RegisterPage from "../pages/register";
@@ -46,15 +48,15 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="map" replace />,
+        element: <Navigate to="overview" replace />,
+      },
+      {
+        path: "overview",
+        element: <Overview />,
       },
       {
         path: "map",
-        element: <div>کامپوننت نقشه و لایه‌ها</div>,
-      },
-      {
-        path: "tables",
-        element: <div>کامپوننت جداول تان‌استک</div>,
+        element: <MapPage />,
       },
     ],
   },

@@ -137,7 +137,7 @@ function RegisterPage() {
       <div className="hidden lg:flex flex-1 relative bg-neutral-950 items-center justify-center p-12 overflow-hidden border-r border-border/40">
         {/* گرید لاین‌ها و نورهای پس‌زمینه */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-20" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-100 h-100 bg-primary/10 rounded-full blur-[100px]" />
 
         <div className="relative z-10 max-w-md text-right flex flex-col gap-4">
           <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 self-start text-primary">
