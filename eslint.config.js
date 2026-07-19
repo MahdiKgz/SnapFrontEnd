@@ -16,7 +16,6 @@ export default tseslint.config(
 
   ...tseslint.configs.recommended,
 
-  // @eslint-react جایگزین eslint-plugin-react
   {
     ...eslintReact.configs["recommended-typescript"],
   },

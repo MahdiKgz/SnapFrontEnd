@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
+import Home from "../pages/home";
 import AuthLayout from "./auth-layout";
 import { DashboardLayout } from "./dashboard-layout";
 import PublicLayout from "./public-layout";
@@ -10,7 +11,7 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <div>صفحه اصلی سایت</div>,
+        element: <Home />,
       },
       {
         path: "blog",
