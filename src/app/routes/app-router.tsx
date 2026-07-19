@@ -1,6 +1,8 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import Home from "../pages/home";
+import LoginPage from "../pages/login";
+import RegisterPage from "../pages/register";
 import AuthLayout from "./auth-layout";
 import { DashboardLayout } from "./dashboard-layout";
 import PublicLayout from "./public-layout";
@@ -29,11 +31,11 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         path: "login",
-        element: <div>فرم ورود</div>,
+        element: <LoginPage />,
       },
       {
         path: "register",
-        element: <div>فرم ثبت‌نام</div>,
+        element: <RegisterPage />,
       },
     ],
   },
