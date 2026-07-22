@@ -3,6 +3,9 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import MapPage from "../pages/dashboard/map";
 import Overview from "../pages/dashboard/overview";
 import Home from "../pages/home";
+import BlogPage from "../pages/home/blog";
+import ContactPage from "../pages/home/contact";
+import PricingPage from "../pages/home/pricing";
 import LoginPage from "../pages/login";
 import RegisterPage from "../pages/register";
 import AuthLayout from "./auth-layout";
@@ -19,11 +22,15 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: "blog",
-        element: <div>صفحه بلاگ</div>,
+        element: <BlogPage />,
       },
       {
         path: "contact-us",
-        element: <div>صفحه تماس با ما</div>,
+        element: <ContactPage />,
+      },
+      {
+        path: "pricing",
+        element: <PricingPage />,
       },
     ],
   },

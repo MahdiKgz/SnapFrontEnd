@@ -1,7 +1,6 @@
 import React from "react";
 
 import { Button } from "@/components/ui/button";
-// یا هر کامپوننت ناوبری که استفاده می‌کنی
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -20,50 +19,73 @@ function Header() {
         {/* سمت راست: لوگو و ناوبری اصلی */}
         <div className="flex items-center gap-8">
           {/* لوگوی سیستم */}
-          <div className="flex items-center gap-2 font-sans font-bold text-lg tracking-wider text-foreground">
+          <Link
+            to="/"
+            className="flex items-center gap-2 font-sans font-bold text-lg tracking-wider text-foreground"
+          >
             <span className="h-6 w-6 rounded-md bg-primary flex items-center justify-center text-primary-foreground text-sm shadow-[0_0_15px_rgba(var(--primary),0.5)]">
               S
             </span>
             <span>
               Snap<span className="text-primary">GIS</span>
             </span>
-          </div>
+          </Link>
 
           {/* منوی ناوبری شدسی‌ان */}
-          <NavigationMenu>
+          <NavigationMenu dir="rtl">
             <NavigationMenuList className="gap-1">
+              {/* صفحه اصلی */}
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
+                >
+                  <Link to="/">صفحه اصلی</Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
+              {/* منوی دراپ‌داون خدمات و قابلیت‌ها */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger
                   className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground data-[state=open]:text-foreground`}
                 >
-                  دسته‌بندی‌ها
+                  قابلیت‌ها
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="w-[200px] p-2 bg-card border border-border rounded-lg shadow-xl">
-                    <NavigationMenuLink
-                      href="/category/gis"
-                      className="block p-2 text-sm rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                    >
-                      سیستم‌های اطلاعاتی مکانی
+                  <div className="w-[220px] p-2 bg-card border border-border rounded-lg shadow-xl flex flex-col gap-1">
+                    <NavigationMenuLink className="block p-2 text-xs rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                      <Link to="/#features">موتور رفع خطای توپولوژی</Link>
+                    </NavigationMenuLink>
+                    <NavigationMenuLink className="block p-2 text-xs rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                      <Link to="/#workflow">مدیریت و اصلاح لایه‌ها</Link>
                     </NavigationMenuLink>
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger
-                  className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
-                >
-                  مقالات
-                </NavigationMenuTrigger>
-              </NavigationMenuItem>
-
+              {/* وبلاگ */}
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  href="/contact"
                   className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
                 >
-                  ارتباط با ما
+                  <Link to="/blog">مقالات</Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
+              {/* تعرفه‌ها */}
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
+                >
+                  <Link to="/pricing">تعرفه‌ها</Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
+              {/* ارتباط با ما */}
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
+                >
+                  <Link to="/contact-us">ارتباط با ما</Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
@@ -71,16 +93,21 @@ function Header() {
         </div>
 
         {/* سمت چپ: دکمه‌های ورود و اکشن */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            ورود به پنل
-          </Button>
-          <Button className="text-sm font-medium shadow-[0_0_20px_rgba(114,180,145,0.15)] hover:shadow-[0_0_25px_rgba(114,180,145,0.3)] transition-all">
-            شروع رایگان
-          </Button>
+        <div className="flex items-center gap-3">
+          <Link to="/auth/login">
+            <Button
+              variant="ghost"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              ورود به پنل
+            </Button>
+          </Link>
+
+          <Link to="/dashboard">
+            <Button className="text-xs font-medium shadow-[0_0_20px_rgba(114,180,145,0.15)] hover:shadow-[0_0_25px_rgba(114,180,145,0.3)] transition-all">
+              ورود به میز کار
+            </Button>
+          </Link>
         </div>
       </div>
     </header>
