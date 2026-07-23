@@ -1,7 +1,7 @@
 import { ProtectedRoute } from "@/features/auth/ui/protected-route";
+import MapPage from "@/pages/map";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
-import MapPage from "../pages/dashboard/map";
 import Overview from "../pages/dashboard/overview";
 import Home from "../pages/home";
 import BlogPage from "../pages/home/blog";
@@ -15,6 +15,11 @@ import { DashboardLayout } from "./dashboard-layout";
 import PublicLayout from "./public-layout";
 
 export const appRouter = createBrowserRouter([
+  {
+    path: "/map",
+    element: <MapPage />,
+  },
+
   {
     element: <PublicLayout />,
     children: [
