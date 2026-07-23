@@ -1,7 +1,10 @@
 import React from "react";
 
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { authApi } from "@/features/auth/api/auth-api";
+import { logout } from "@/features/auth/model/auth-slice";
 import { Layers, LogOut, Map, Settings, ShieldAlert, User } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 const NAVIGATION_ITEMS = [
   { path: "/dashboard/map", title: "میز کار نقشه", icon: <Map className="h-4 w-4" /> },
@@ -11,6 +14,16 @@ const NAVIGATION_ITEMS = [
 ];
 
 export function DashboardLayout() {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const user = useAppSelector((state) => state.auth.user);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    dispatch(authApi.util.resetApiState());
+    navigate("/auth/login", { replace: true });
+  };
+
   return (
     <div className="w-full h-screen flex items-stretch bg-background text-foreground overflow-hidden">
       {/* سایدبار اختصاصی پنل جی‌آی‌اس */}
@@ -29,9 +42,9 @@ export function DashboardLayout() {
 
           {/* منوی ناوبری */}
           <nav className="flex flex-col gap-1">
-            {NAVIGATION_ITEMS.map((item, index) => (
+            {NAVIGATION_ITEMS.map((item) => (
               <NavLink
-                key={index}
+                key={item.path}
                 to={item.path}
                 className={({ isActive }) => `
                   flex items-center gap-3 px-4 h-10 rounded-lg text-sm transition-all duration-200 group
@@ -51,7 +64,24 @@ export function DashboardLayout() {
 
         {/* بخش پایینی سایدبار: اطلاعات کاربر و خروج */}
         <div className="p-4 border-t border-sidebar-border bg-sidebar-accent/30 flex flex-col gap-2">
-          <button className="flex items-center gap-3 px-4 h-10 w-full rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors text-right">
+          <div className="flex items-center gap-3 px-4 py-2 text-sidebar-foreground">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary/10 text-sidebar-primary">
+              <User className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-xs font-semibold">
+                {user?.name ?? "کاربر SnapGIS"}
+              </span>
+              <span className="block truncate text-[11px] text-sidebar-foreground/60" dir="ltr">
+                {user?.phone}
+              </span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 h-10 w-full rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors text-right"
+          >
             <LogOut className="h-4 w-4 shrink-0" />
             <span className="font-medium">خروج از حساب</span>
           </button>

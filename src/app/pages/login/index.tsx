@@ -1,21 +1,57 @@
-// src/pages/auth/LoginPage.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLoginMutation } from "@/features/auth/api/auth-api";
+import { getAuthErrorMessage } from "@/features/auth/lib/get-auth-error-message";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock, ShieldCheck, Smartphone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  phone: z
+    .string()
+    .min(1, "شماره تلفن همراه را وارد کنید.")
+    .regex(/^09\d{9}$/, "شماره همراه باید با ۰۹ شروع شود و ۱۱ رقم باشد."),
+  password: z.string().min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد."),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const [login, { isLoading }] = useLoginMutation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      phone: "",
+      password: "",
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // فرآیند ارسال دیتای لاگین به سرور
-    console.log({ phone, password });
+  const submitLogin = handleSubmit(async (values) => {
+    try {
+      await login(values).unwrap();
+
+      const requestedPath = (location.state as { from?: string } | null)?.from;
+      navigate(requestedPath ?? "/dashboard", { replace: true });
+    } catch (error) {
+      setError("root", { message: getAuthErrorMessage(error) });
+    }
+  });
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((isVisible) => !isVisible);
   };
 
   return (
@@ -41,7 +77,7 @@ function LoginPage() {
         </div>
 
         {/* خودِ فرم لاگین */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={submitLogin} className="flex flex-col gap-5" noValidate>
           {/* فیلد شماره تلفن */}
           <div className="space-y-2">
             <Label htmlFor="phone" className="text-sm font-medium text-foreground/80">
@@ -54,13 +90,20 @@ function LoginPage() {
               <Input
                 id="phone"
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
                 placeholder="09123456789"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                aria-invalid={Boolean(errors.phone)}
+                aria-describedby={errors.phone ? "phone-error" : undefined}
                 className="pr-10 pl-3 text-left font-sans h-11 tracking-widest border-border/80 bg-card/40 focus-visible:ring-primary/50"
-                required
+                {...register("phone")}
               />
             </div>
+            {errors.phone && (
+              <p id="phone-error" className="text-xs text-destructive" role="alert">
+                {errors.phone.message}
+              </p>
+            )}
           </div>
 
           {/* flex فیلد رمز عبور */}
@@ -80,28 +123,45 @@ function LoginPage() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                aria-invalid={Boolean(errors.password)}
+                aria-describedby={errors.password ? "password-error" : undefined}
                 className="pr-10 pl-10 h-11 tracking-widest border-border/80 bg-card/40 focus-visible:ring-primary/50"
-                required
+                {...register("password")}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={togglePasswordVisibility}
+                aria-label={showPassword ? "پنهان کردن رمز عبور" : "نمایش رمز عبور"}
                 className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground/60 hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {errors.password && (
+              <p id="password-error" className="text-xs text-destructive" role="alert">
+                {errors.password.message}
+              </p>
+            )}
           </div>
+
+          {errors.root && (
+            <div
+              className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              role="alert"
+            >
+              {errors.root.message}
+            </div>
+          )}
 
           {/* دکمه ثبت فرم */}
           <Button
             type="submit"
+            disabled={isLoading}
             className="w-full h-11 text-base font-semibold mt-2 shadow-[0_0_20px_rgba(114,180,145,0.15)] hover:shadow-[0_0_25px_rgba(114,180,145,0.3)] transition-all"
           >
-            ورود به حساب کاربری
+            {isLoading ? "در حال ورود..." : "ورود به حساب کاربری"}
           </Button>
         </form>
 

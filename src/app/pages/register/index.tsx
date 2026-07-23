@@ -1,22 +1,57 @@
-// src/pages/auth/RegisterPage.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRegisterMutation } from "@/features/auth/api/auth-api";
+import { getAuthErrorMessage } from "@/features/auth/lib/get-auth-error-message";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock, Smartphone, User, UserCheck } from "lucide-react";
+import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { z } from "zod";
+
+const registerSchema = z.object({
+  name: z.string().min(2, "نام و نام خانوادگی باید حداقل ۲ کاراکتر باشد."),
+  phone: z
+    .string()
+    .min(1, "شماره تلفن همراه را وارد کنید.")
+    .regex(/^09\d{9}$/, "شماره همراه باید با ۰۹ شروع شود و ۱۱ رقم باشد."),
+  password: z.string().min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد."),
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const [createAccount, { isLoading }] = useRegisterMutation();
+  const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      phone: "",
+      password: "",
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // فرآیند ارسال اطلاعات ثبت‌نام به بک‌اِند
-    console.log({ name, phone, password });
+  const submitRegistration = handleSubmit(async (values) => {
+    try {
+      await createAccount(values).unwrap();
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      setError("root", { message: getAuthErrorMessage(error) });
+    }
+  });
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((isVisible) => !isVisible);
   };
 
   return (
@@ -44,7 +79,7 @@ function RegisterPage() {
         </div>
 
         {/* فرم ثبت‌نام */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={submitRegistration} className="flex flex-col gap-5" noValidate>
           {/* فیلد نام و نام خانوادگی */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium text-foreground/80">
@@ -57,13 +92,19 @@ function RegisterPage() {
               <Input
                 id="name"
                 type="text"
+                autoComplete="name"
                 placeholder="مثلاً: علی رضایی"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? "name-error" : undefined}
                 className="pr-10 pl-3 h-11 border-border/80 bg-card/40 focus-visible:ring-primary/50"
-                required
+                {...register("name")}
               />
             </div>
+            {errors.name && (
+              <p id="name-error" className="text-xs text-destructive" role="alert">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           {/* فیلد شماره تلفن همراه */}
@@ -78,13 +119,20 @@ function RegisterPage() {
               <Input
                 id="phone"
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
                 placeholder="09123456789"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                aria-invalid={Boolean(errors.phone)}
+                aria-describedby={errors.phone ? "phone-error" : undefined}
                 className="pr-10 pl-3 text-left font-sans h-11 tracking-widest border-border/80 bg-card/40 focus-visible:ring-primary/50"
-                required
+                {...register("phone")}
               />
             </div>
+            {errors.phone && (
+              <p id="phone-error" className="text-xs text-destructive" role="alert">
+                {errors.phone.message}
+              </p>
+            )}
           </div>
 
           {/* فیلد رمز عبور */}
@@ -99,28 +147,45 @@ function RegisterPage() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                aria-invalid={Boolean(errors.password)}
+                aria-describedby={errors.password ? "password-error" : undefined}
                 className="pr-10 pl-10 h-11 tracking-widest border-border/80 bg-card/40 focus-visible:ring-primary/50"
-                required
+                {...register("password")}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={togglePasswordVisibility}
+                aria-label={showPassword ? "پنهان کردن رمز عبور" : "نمایش رمز عبور"}
                 className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground/60 hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {errors.password && (
+              <p id="password-error" className="text-xs text-destructive" role="alert">
+                {errors.password.message}
+              </p>
+            )}
           </div>
+
+          {errors.root && (
+            <div
+              className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              role="alert"
+            >
+              {errors.root.message}
+            </div>
+          )}
 
           {/* دکمه ثبت‌نام */}
           <Button
             type="submit"
+            disabled={isLoading}
             className="w-full h-11 text-base font-semibold mt-2 shadow-[0_0_20px_rgba(114,180,145,0.15)] hover:shadow-[0_0_25px_rgba(114,180,145,0.3)] transition-all"
           >
-            تایید و ساخت حساب کاربری
+            {isLoading ? "در حال ساخت حساب..." : "تایید و ساخت حساب کاربری"}
           </Button>
         </form>
 

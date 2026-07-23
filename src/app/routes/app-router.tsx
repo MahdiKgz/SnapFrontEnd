@@ -1,3 +1,4 @@
+import { ProtectedRoute } from "@/features/auth/ui/protected-route";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import MapPage from "../pages/dashboard/map";
@@ -8,6 +9,7 @@ import ContactPage from "../pages/home/contact";
 import PricingPage from "../pages/home/pricing";
 import LoginPage from "../pages/login";
 import RegisterPage from "../pages/register";
+import UnauthorizedPage from "../pages/unauthorized";
 import AuthLayout from "./auth-layout";
 import { DashboardLayout } from "./dashboard-layout";
 import PublicLayout from "./public-layout";
@@ -36,8 +38,13 @@ export const appRouter = createBrowserRouter([
   },
 
   {
+    path: "/auth",
     element: <AuthLayout />,
     children: [
+      {
+        index: true,
+        element: <Navigate to="login" replace />,
+      },
       {
         path: "login",
         element: <LoginPage />,
@@ -51,7 +58,11 @@ export const appRouter = createBrowserRouter([
 
   {
     path: "/dashboard",
-    element: <DashboardLayout />,
+    element: (
+      <ProtectedRoute fallback={<UnauthorizedPage />}>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,
