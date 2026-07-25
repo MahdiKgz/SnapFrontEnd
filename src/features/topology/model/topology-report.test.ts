@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   FEATURE_INDEX_PROPERTY,
-  buildFeatureReports,
   getSelectedFeatureCollection,
   prepareAffectedFeatureCollection,
 } from "./topology-report";
@@ -41,10 +40,35 @@ function createUploadData(): TopologyUploadData {
         featuresScanned: 8,
         checksRun: 12,
         issuesFound: 3,
+        issueGroups: 2,
         affectedFeatures: 2,
         autoRepairableIssues: 0,
         manualReviewIssues: 3,
       },
+      issueGroups: [
+        {
+          groupId: "coordinatePrecision:EXCESSIVE_COORDINATE_PRECISION",
+          check: "coordinatePrecision",
+          code: "EXCESSIVE_COORDINATE_PRECISION",
+          issueCount: 2,
+          affectedFeatureCount: 2,
+          affectedFeatureIndexes: [5, 7],
+          affectedFeatureIds: ["parcel-five", "parcel-seven"],
+          geometryTypes: ["Polygon"],
+          disposition: "ManualReview",
+        },
+        {
+          groupId: "zeroAreaPolygons:ZERO_AREA_POLYGON",
+          check: "zeroAreaPolygons",
+          code: "ZERO_AREA_POLYGON",
+          issueCount: 1,
+          affectedFeatureCount: 1,
+          affectedFeatureIndexes: [7],
+          affectedFeatureIds: ["parcel-seven"],
+          geometryTypes: ["Polygon"],
+          disposition: "ManualReview",
+        },
+      ],
       affectedFeatureCollection: {
         type: "FeatureCollection",
         features: [
@@ -105,23 +129,6 @@ function createUploadData(): TopologyUploadData {
 }
 
 describe("topology report model", () => {
-  it("groups issue metadata by the stable SnapGIS feature index", () => {
-    const reports = buildFeatureReports(createUploadData());
-
-    expect(reports).toHaveLength(2);
-    expect(reports[0]).toMatchObject({
-      featureIndex: 5,
-      featureId: "parcel-five",
-      name: "Parcel Five",
-      geometryType: "Polygon",
-    });
-    expect(reports[0].issues.map((issue) => issue.code)).toEqual([
-      "EXCESSIVE_COORDINATE_PRECISION",
-      "RING_ORIENTATION",
-    ]);
-    expect(reports[1].issues[0].code).toBe("ZERO_AREA_POLYGON");
-  });
-
   it("moves the top-level feature index into MapLibre-readable properties", () => {
     const sourceData = prepareAffectedFeatureCollection(
       createUploadData().report.affectedFeatureCollection,
@@ -132,14 +139,16 @@ describe("topology report model", () => {
     expect(sourceData.features[0].id).toBe("parcel-five");
   });
 
-  it("builds an isolated map source for the card-selected feature", () => {
+  it("builds an isolated map source for every feature in a selected issue group", () => {
     const selectedData = getSelectedFeatureCollection(
       createUploadData().report.affectedFeatureCollection,
-      7,
+      [5, 7],
     );
 
-    expect(selectedData.features).toHaveLength(1);
-    expect(selectedData.features[0].id).toBe("parcel-seven");
-    expect(selectedData.features[0].properties?.[FEATURE_INDEX_PROPERTY]).toBe(7);
+    expect(selectedData.features).toHaveLength(2);
+    expect(selectedData.features.map((feature) => feature.id)).toEqual([
+      "parcel-five",
+      "parcel-seven",
+    ]);
   });
 });

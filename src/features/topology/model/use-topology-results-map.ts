@@ -23,7 +23,7 @@ const LAYER_IDS = [
 interface UseTopologyResultsMapOptions {
   affectedFeatures: AffectedFeatureCollection | null;
   mapRef: RefObject<MapLibreMap | null>;
-  selectedFeatureIndex: number | null;
+  selectedFeatureIndexes: number[];
 }
 
 function removeResultsLayers(map: MapLibreMap) {
@@ -35,7 +35,7 @@ function removeResultsLayers(map: MapLibreMap) {
   if (map.getSource(SELECTED_SOURCE_ID)) map.removeSource(SELECTED_SOURCE_ID);
 }
 
-function flyToFeature(
+function flyToFeatures(
   map: MapLibreMap,
   selectedData: ReturnType<typeof getSelectedFeatureCollection>,
 ) {
@@ -69,7 +69,7 @@ function flyToFeature(
 export function useTopologyResultsMap({
   affectedFeatures,
   mapRef,
-  selectedFeatureIndex,
+  selectedFeatureIndexes,
 }: UseTopologyResultsMapOptions) {
   useEffect(() => {
     const map = mapRef.current;
@@ -163,14 +163,14 @@ export function useTopologyResultsMap({
     const map = mapRef.current;
     if (!map || !affectedFeatures) return;
 
-    const selectedData = getSelectedFeatureCollection(affectedFeatures, selectedFeatureIndex);
+    const selectedData = getSelectedFeatureCollection(affectedFeatures, selectedFeatureIndexes);
 
     const applySelection = () => {
       const source = map.getSource(SELECTED_SOURCE_ID) as GeoJSONSource | undefined;
       if (!source) return false;
 
       source.setData(selectedData);
-      if (selectedFeatureIndex !== null) flyToFeature(map, selectedData);
+      if (selectedFeatureIndexes.length > 0) flyToFeatures(map, selectedData);
       return true;
     };
 
@@ -189,5 +189,5 @@ export function useTopologyResultsMap({
       map.off("load", applyWhenReady);
       map.off("idle", applyWhenReady);
     };
-  }, [affectedFeatures, mapRef, selectedFeatureIndex]);
+  }, [affectedFeatures, mapRef, selectedFeatureIndexes]);
 }

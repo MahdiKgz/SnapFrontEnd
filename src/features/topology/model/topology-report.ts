@@ -1,16 +1,8 @@
 import type { Feature, FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 
-import type { AffectedFeatureCollection, TopologyIssue, TopologyUploadData } from "./types";
+import type { AffectedFeatureCollection } from "./types";
 
 export const FEATURE_INDEX_PROPERTY = "__snapgisFeatureIndex";
-
-export interface TopologyFeatureReport {
-  featureIndex: number;
-  featureId: string;
-  name: string;
-  geometryType: string;
-  issues: TopologyIssue[];
-}
 
 function getFeatureIndex(
   feature: AffectedFeatureCollection["features"][number],
@@ -20,31 +12,6 @@ function getFeatureIndex(
 
   const propertyIndex = feature.properties?.snapgisFeatureIndex;
   return typeof propertyIndex === "number" ? propertyIndex : fallbackIndex;
-}
-
-export function buildFeatureReports(data: TopologyUploadData): TopologyFeatureReport[] {
-  const issuesByFeature = new Map<number, TopologyIssue[]>();
-
-  data.report.issues.forEach((issue) => {
-    const issues = issuesByFeature.get(issue.featureIndex) ?? [];
-    issues.push(issue);
-    issuesByFeature.set(issue.featureIndex, issues);
-  });
-
-  return data.report.affectedFeatureCollection.features.map((feature, fallbackIndex) => {
-    const featureIndex = getFeatureIndex(feature, fallbackIndex);
-    const issues = issuesByFeature.get(featureIndex) ?? [];
-    const featureId = feature.id ?? issues[0]?.featureId ?? featureIndex;
-    const propertyName = feature.properties?.name;
-
-    return {
-      featureIndex,
-      featureId: String(featureId),
-      name: typeof propertyName === "string" ? propertyName : `عارضه ${featureIndex + 1}`,
-      geometryType: feature.geometry?.type ?? issues[0]?.geometryType ?? "Unknown",
-      issues,
-    };
-  });
 }
 
 export function prepareAffectedFeatureCollection(
@@ -72,21 +39,23 @@ export function prepareAffectedFeatureCollection(
 
 export function getSelectedFeatureCollection(
   featureCollection: AffectedFeatureCollection,
-  selectedFeatureIndex: number | null,
+  selectedFeatureIndexes: number[],
 ): FeatureCollection<Geometry, GeoJsonProperties> {
   const preparedFeatures = prepareAffectedFeatureCollection(featureCollection);
 
-  if (selectedFeatureIndex === null) {
+  if (selectedFeatureIndexes.length === 0) {
     return {
       type: "FeatureCollection",
       features: [],
     };
   }
 
+  const selectedIndexes = new Set(selectedFeatureIndexes);
+
   return {
     type: "FeatureCollection",
-    features: preparedFeatures.features.filter(
-      (feature) => feature.properties?.[FEATURE_INDEX_PROPERTY] === selectedFeatureIndex,
+    features: preparedFeatures.features.filter((feature) =>
+      selectedIndexes.has(Number(feature.properties?.[FEATURE_INDEX_PROPERTY])),
     ),
   };
 }

@@ -12,11 +12,10 @@ interface TopologyFormProps {
   isPreviewing: boolean;
   onAnalysisComplete: (data: TopologyUploadData) => void;
   onAnalysisReset: () => void;
-  onSelectFeature: (featureIndex: number) => void;
+  onSelectFeatures: (featureIndexes: number[]) => void;
   previewError: string;
   previewFile: (file: File) => Promise<void>;
   removePreview: () => void;
-  selectedFeatureIndex: number | null;
 }
 
 const ACCEPTED_FILE_TYPES = ".json,.geojson,.kml,.kmz";
@@ -26,11 +25,10 @@ export function TopologyForm({
   isPreviewing,
   onAnalysisComplete,
   onAnalysisReset,
-  onSelectFeature,
+  onSelectFeatures,
   previewError,
   previewFile,
   removePreview,
-  selectedFeatureIndex,
 }: TopologyFormProps) {
   const {
     changeName,
@@ -58,12 +56,7 @@ export function TopologyForm({
 
   if (result) {
     return (
-      <TopologyResults
-        data={result}
-        selectedFeatureIndex={selectedFeatureIndex}
-        onSelectFeature={onSelectFeature}
-        onReset={resetAnalysis}
-      />
+      <TopologyResults data={result} onSelectFeatures={onSelectFeatures} onReset={resetAnalysis} />
     );
   }
 

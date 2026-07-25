@@ -32,11 +32,25 @@ const data: TopologyUploadData = {
     summary: {
       featuresScanned: 1,
       checksRun: 12,
-      issuesFound: 0,
-      affectedFeatures: 0,
+      issuesFound: 2,
+      issueGroups: 1,
+      affectedFeatures: 1,
       autoRepairableIssues: 0,
-      manualReviewIssues: 0,
+      manualReviewIssues: 2,
     },
+    issueGroups: [
+      {
+        groupId: "coordinatePrecision:EXCESSIVE_COORDINATE_PRECISION",
+        check: "coordinatePrecision",
+        code: "EXCESSIVE_COORDINATE_PRECISION",
+        issueCount: 2,
+        affectedFeatureCount: 1,
+        affectedFeatureIndexes: [5],
+        affectedFeatureIds: ["parcel-five"],
+        geometryTypes: ["Polygon"],
+        disposition: "ManualReview",
+      },
+    ],
     affectedFeatureCollection: {
       type: "FeatureCollection",
       features: [],
@@ -59,15 +73,9 @@ const data: TopologyUploadData = {
 describe("TopologyResults", () => {
   it("places the new-file action beside auto-repair and resets from the header", () => {
     const onReset = vi.fn();
+    const onSelectFeatures = vi.fn();
 
-    render(
-      <TopologyResults
-        data={data}
-        onReset={onReset}
-        onSelectFeature={vi.fn()}
-        selectedFeatureIndex={null}
-      />,
-    );
+    render(<TopologyResults data={data} onReset={onReset} onSelectFeatures={onSelectFeatures} />);
 
     const newFileButton = screen.getByRole("button", { name: "بررسی فایل جدید" });
     const autoRepairButton = screen.getByRole("button", { name: "ترمیم خودکار" });
@@ -77,5 +85,8 @@ describe("TopologyResults", () => {
 
     fireEvent.click(newFileButton);
     expect(onReset).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByRole("button", { name: /EXCESSIVE_COORDINATE_PRECISION/ }));
+    expect(onSelectFeatures).toHaveBeenCalledWith([5]);
   });
 });

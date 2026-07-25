@@ -15,12 +15,12 @@ export function MapWorkbench() {
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [topologyResult, setTopologyResult] = useState<TopologyUploadData | null>(null);
-  const [selectedFeatureIndex, setSelectedFeatureIndex] = useState<number | null>(null);
+  const [selectedFeatureIndexes, setSelectedFeatureIndexes] = useState<number[]>([]);
 
   useTopologyResultsMap({
     affectedFeatures: topologyResult?.report.affectedFeatureCollection ?? null,
     mapRef,
-    selectedFeatureIndex,
+    selectedFeatureIndexes,
   });
 
   useEffect(() => {
@@ -49,17 +49,16 @@ export function MapWorkbench() {
             isPreviewing={isPreviewing}
             onAnalysisComplete={(result) => {
               setTopologyResult(result);
-              setSelectedFeatureIndex(null);
+              setSelectedFeatureIndexes([]);
             }}
             onAnalysisReset={() => {
               setTopologyResult(null);
-              setSelectedFeatureIndex(null);
+              setSelectedFeatureIndexes([]);
             }}
-            onSelectFeature={setSelectedFeatureIndex}
+            onSelectFeatures={setSelectedFeatureIndexes}
             previewError={previewError}
             previewFile={previewFile}
             removePreview={removePreview}
-            selectedFeatureIndex={selectedFeatureIndex}
           />
         </div>
 

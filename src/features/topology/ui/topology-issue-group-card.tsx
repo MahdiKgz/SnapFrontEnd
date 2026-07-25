@@ -1,28 +1,23 @@
-import { AlertTriangle, Braces, MapPinned } from "lucide-react";
+import { AlertTriangle, Braces, Layers3 } from "lucide-react";
 
-import type { TopologyFeatureReport } from "../model/topology-report";
+import type { TopologyIssueGroup } from "../model/types";
 
-interface TopologyFeatureReportCardProps {
+interface TopologyIssueGroupCardProps {
+  group: TopologyIssueGroup;
   isSelected: boolean;
-  onSelect: (featureIndex: number) => void;
-  report: TopologyFeatureReport;
+  onSelect: (group: TopologyIssueGroup) => void;
 }
 
-export function TopologyFeatureReportCard({
+export function TopologyIssueGroupCard({
+  group,
   isSelected,
   onSelect,
-  report,
-}: TopologyFeatureReportCardProps) {
-  const issueCodes = [...new Set(report.issues.map((issue) => issue.code))];
-  const manualReviewCount = report.issues.filter(
-    (issue) => issue.disposition === "ManualReview",
-  ).length;
-
+}: TopologyIssueGroupCardProps) {
   return (
     <button
       type="button"
       aria-pressed={isSelected}
-      onClick={() => onSelect(report.featureIndex)}
+      onClick={() => onSelect(group)}
       className={`w-full rounded-xl border p-3 text-right transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 ${
         isSelected
           ? "border-red-400 bg-red-500/12 shadow-[0_12px_28px_-18px_rgba(248,113,113,0.9)]"
@@ -35,40 +30,47 @@ export function TopologyFeatureReportCard({
             isSelected ? "bg-red-500 text-white" : "bg-red-500/12 text-red-400"
           }`}
         >
-          <MapPinned className="size-4" />
+          <Layers3 className="size-4" />
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-xs font-bold text-slate-100">{report.name}</span>
+          <span className="block truncate text-xs font-bold text-slate-100" dir="ltr">
+            {group.code}
+          </span>
           <span className="mt-1 block truncate text-[10px] text-slate-500" dir="ltr">
-            ID: {report.featureId}
+            {group.check}
           </span>
         </span>
 
-        <span className="rounded-full bg-red-500/12 px-2 py-1 text-[10px] font-bold text-red-300">
-          {report.issues.length.toLocaleString("fa-IR")} خطا
+        <span className="flex shrink-0 flex-col items-end gap-1">
+          <span className="rounded-full bg-red-500/12 px-2 py-1 text-[10px] font-bold text-red-300">
+            {group.issueCount.toLocaleString("fa-IR")} خطا
+          </span>
+          <span className="text-[9px] font-medium text-amber-400" dir="ltr">
+            {group.disposition}
+          </span>
         </span>
       </div>
 
       <span className="mt-3 grid grid-cols-2 gap-2">
         <span className="flex items-center gap-1.5 rounded-lg bg-slate-950/70 px-2 py-1.5 text-[10px] text-slate-400">
           <Braces className="size-3 text-slate-500" />
-          {report.geometryType}
+          {group.geometryTypes.join("، ")}
         </span>
         <span className="flex items-center gap-1.5 rounded-lg bg-slate-950/70 px-2 py-1.5 text-[10px] text-slate-400">
           <AlertTriangle className="size-3 text-amber-400" />
-          {manualReviewCount.toLocaleString("fa-IR")} بررسی دستی
+          {group.affectedFeatureCount.toLocaleString("fa-IR")} عارضه
         </span>
       </span>
 
-      {issueCodes.length > 0 && (
+      {group.affectedFeatureIds.length > 0 && (
         <span className="mt-2 flex flex-wrap gap-1.5" dir="ltr">
-          {issueCodes.map((code) => (
+          {group.affectedFeatureIds.map((featureId) => (
             <span
-              key={code}
+              key={featureId}
               className="max-w-full truncate rounded-md border border-slate-700 bg-slate-800/70 px-1.5 py-1 text-[9px] font-medium text-slate-300"
             >
-              {code}
+              {featureId}
             </span>
           ))}
         </span>

@@ -10,27 +10,25 @@ import {
 } from "lucide-react";
 
 import { useHealTopologyMutation } from "../api/topology-api";
-import { buildFeatureReports } from "../model/topology-report";
-import type { TopologyUploadData } from "../model/types";
-import { TopologyFeatureReportCard } from "./topology-feature-report-card";
+import type { TopologyIssueGroup, TopologyUploadData } from "../model/types";
+import { TopologyIssueGroupCard } from "./topology-issue-group-card";
 
 interface TopologyResultsProps {
   data: TopologyUploadData;
   onReset: () => void;
-  onSelectFeature: (featureIndex: number) => void;
-  selectedFeatureIndex: number | null;
+  onSelectFeatures: (featureIndexes: number[]) => void;
 }
 
-export function TopologyResults({
-  data,
-  onReset,
-  onSelectFeature,
-  selectedFeatureIndex,
-}: TopologyResultsProps) {
+export function TopologyResults({ data, onReset, onSelectFeatures }: TopologyResultsProps) {
   const [healTopology, { isError, isLoading, isSuccess }] = useHealTopologyMutation();
   const [healMessage, setHealMessage] = useState("");
-  const featureReports = buildFeatureReports(data);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const { summary } = data.report;
+
+  const selectIssueGroup = (group: TopologyIssueGroup) => {
+    setSelectedGroupId(group.groupId);
+    onSelectFeatures(group.affectedFeatureIndexes);
+  };
 
   const requestAutoRepair = async () => {
     setHealMessage("");
@@ -115,7 +113,7 @@ export function TopologyResults({
           </span>
         </div>
 
-        <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+        <dl className="mt-3 grid grid-cols-2 gap-2 text-center">
           <div className="rounded-lg bg-slate-950/70 px-2 py-2">
             <dt className="text-[9px] text-slate-500">عارضه</dt>
             <dd className="mt-1 text-sm font-bold text-slate-100">
@@ -126,6 +124,12 @@ export function TopologyResults({
             <dt className="text-[9px] text-slate-500">خطا</dt>
             <dd className="mt-1 text-sm font-bold text-red-400">
               {summary.issuesFound.toLocaleString("fa-IR")}
+            </dd>
+          </div>
+          <div className="rounded-lg bg-slate-950/70 px-2 py-2">
+            <dt className="text-[9px] text-slate-500">گروه خطا</dt>
+            <dd className="mt-1 text-sm font-bold text-amber-400">
+              {summary.issueGroups.toLocaleString("fa-IR")}
             </dd>
           </div>
           <div className="rounded-lg bg-slate-950/70 px-2 py-2">
@@ -159,23 +163,23 @@ export function TopologyResults({
 
       <div className="mt-5 flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-xs font-bold text-slate-200">عارضه‌های درگیر</h2>
+          <h2 className="text-xs font-bold text-slate-200">گروه‌های خطا</h2>
           <p className="mt-1 text-[10px] text-slate-500">
-            برای تمرکز روی نقشه، یک کارت را انتخاب کنید.
+            برای نمایش عارضه‌های هر گروه روی نقشه، کارت را انتخاب کنید.
           </p>
         </div>
         <span className="rounded-full bg-red-500/12 px-2 py-1 text-[10px] font-bold text-red-300">
-          {summary.affectedFeatures.toLocaleString("fa-IR")}
+          {summary.issueGroups.toLocaleString("fa-IR")}
         </span>
       </div>
 
       <div className="mt-3 space-y-2.5">
-        {featureReports.map((report) => (
-          <TopologyFeatureReportCard
-            key={report.featureIndex}
-            report={report}
-            isSelected={selectedFeatureIndex === report.featureIndex}
-            onSelect={onSelectFeature}
+        {data.report.issueGroups.map((group) => (
+          <TopologyIssueGroupCard
+            key={group.groupId}
+            group={group}
+            isSelected={selectedGroupId === group.groupId}
+            onSelect={selectIssueGroup}
           />
         ))}
       </div>

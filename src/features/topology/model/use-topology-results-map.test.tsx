@@ -28,11 +28,28 @@ const affectedFeatures: AffectedFeatureCollection = {
       },
       snapgisFeatureIndex: 5,
     },
+    {
+      type: "Feature",
+      id: "parcel-seven",
+      properties: { name: "Parcel Seven" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [53, 35],
+            [54, 35],
+            [54, 36],
+            [53, 35],
+          ],
+        ],
+      },
+      snapgisFeatureIndex: 7,
+    },
   ],
 };
 
 describe("useTopologyResultsMap", () => {
-  it("updates the selected source and flies to the feature selected by a report card", () => {
+  it("updates the selected source and flies to every feature in the selected issue group", () => {
     const sources = new Map<string, ReturnType<typeof vi.fn>>();
     const layers = new Set<string>();
     const layerPaint = new Map<string, Record<string, unknown>>();
@@ -65,23 +82,26 @@ describe("useTopologyResultsMap", () => {
     const mapRef = { current: map } as RefObject<MapLibreMap | null>;
 
     const { rerender } = renderHook(
-      ({ selectedFeatureIndex }: { selectedFeatureIndex: number | null }) =>
+      ({ selectedFeatureIndexes }: { selectedFeatureIndexes: number[] }) =>
         useTopologyResultsMap({
           affectedFeatures,
           mapRef,
-          selectedFeatureIndex,
+          selectedFeatureIndexes,
         }),
       {
-        initialProps: { selectedFeatureIndex: null },
+        initialProps: { selectedFeatureIndexes: [] },
       },
     );
 
-    rerender({ selectedFeatureIndex: 5 });
+    rerender({ selectedFeatureIndexes: [5, 7] });
 
     const setSelectedData = sources.get("topology-selected-feature");
     expect(setSelectedData).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        features: [expect.objectContaining({ id: "parcel-five" })],
+        features: [
+          expect.objectContaining({ id: "parcel-five" }),
+          expect.objectContaining({ id: "parcel-seven" }),
+        ],
       }),
     );
     expect(flyTo).toHaveBeenCalledWith(
