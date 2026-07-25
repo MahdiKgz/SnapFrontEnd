@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { MapCanvas, useMapLibreMap } from "@/entities/map";
 import { useMapPreview } from "@/features/map-preview";
-import { TopologyForm } from "@/features/topology";
+import { TopologyForm, type TopologyUploadData, useTopologyResultsMap } from "@/features/topology";
 
 import { type MapToolId } from "../model/map-tools";
 import { MapToolPanel } from "./map-tool-panel";
@@ -14,6 +14,14 @@ export function MapWorkbench() {
     useMapPreview(mapRef);
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [topologyResult, setTopologyResult] = useState<TopologyUploadData | null>(null);
+  const [selectedFeatureIndexes, setSelectedFeatureIndexes] = useState<number[]>([]);
+
+  useTopologyResultsMap({
+    affectedFeatures: topologyResult?.report.affectedFeatureCollection ?? null,
+    mapRef,
+    selectedFeatureIndexes,
+  });
 
   useEffect(() => {
     const resizeTimer = window.setTimeout(() => mapRef.current?.resize(), 550);
@@ -39,6 +47,15 @@ export function MapWorkbench() {
           <TopologyForm
             clearPreviewError={clearPreviewError}
             isPreviewing={isPreviewing}
+            onAnalysisComplete={(result) => {
+              setTopologyResult(result);
+              setSelectedFeatureIndexes([]);
+            }}
+            onAnalysisReset={() => {
+              setTopologyResult(null);
+              setSelectedFeatureIndexes([]);
+            }}
+            onSelectFeatures={setSelectedFeatureIndexes}
             previewError={previewError}
             previewFile={previewFile}
             removePreview={removePreview}
