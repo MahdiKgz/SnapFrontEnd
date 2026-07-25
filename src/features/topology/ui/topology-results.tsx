@@ -1,12 +1,11 @@
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   AlertCircle,
   CheckCircle2,
+  FilePlus2,
   FileSearch,
   LoaderCircle,
-  RotateCcw,
   WandSparkles,
 } from "lucide-react";
 
@@ -60,25 +59,42 @@ export function TopologyResults({
             </p>
           </div>
 
-          <button
-            type="button"
-            aria-label="ترمیم خودکار"
-            onClick={() => void requestAutoRepair()}
-            disabled={isLoading}
-            className="group relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-[0_8px_22px_-10px_rgba(16,185,129,0.9)] transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-wait disabled:opacity-70"
-          >
-            {isLoading ? (
-              <LoaderCircle className="size-5 animate-spin" />
-            ) : (
-              <WandSparkles className="size-5" />
-            )}
-            <span
-              role="tooltip"
-              className="pointer-events-none absolute top-[calc(100%+0.5rem)] left-0 z-30 w-max -translate-y-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[10px] font-medium whitespace-nowrap text-slate-100 opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              aria-label="بررسی فایل جدید"
+              onClick={onReset}
+              className="group relative flex size-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
             >
-              ترمیم خودکار
-            </span>
-          </button>
+              <FilePlus2 className="size-5" />
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute top-[calc(100%+0.5rem)] left-1/2 z-30 w-max -translate-x-1/2 -translate-y-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[10px] font-medium whitespace-nowrap text-slate-100 opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+              >
+                بررسی فایل جدید
+              </span>
+            </button>
+
+            <button
+              type="button"
+              aria-label="ترمیم خودکار"
+              onClick={() => void requestAutoRepair()}
+              disabled={isLoading}
+              className="group relative flex size-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-[0_8px_22px_-10px_rgba(16,185,129,0.9)] transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-wait disabled:opacity-70"
+            >
+              {isLoading ? (
+                <LoaderCircle className="size-5 animate-spin" />
+              ) : (
+                <WandSparkles className="size-5" />
+              )}
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute top-[calc(100%+0.5rem)] left-1/2 z-30 w-max -translate-x-1/2 -translate-y-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[10px] font-medium whitespace-nowrap text-slate-100 opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+              >
+                ترمیم خودکار
+              </span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -163,16 +179,6 @@ export function TopologyResults({
           />
         ))}
       </div>
-
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onReset}
-        className="mt-4 h-10 w-full border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white"
-      >
-        <RotateCcw className="size-4" />
-        بررسی فایل جدید
-      </Button>
     </section>
   );
 }
