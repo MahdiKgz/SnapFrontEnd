@@ -4,10 +4,11 @@ import type { RefObject } from "react";
 import { getGeoJsonBounds } from "@/shared/lib/geo";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 
-import { FEATURE_INDEX_PROPERTY, prepareAffectedFeatureCollection } from "./topology-report";
+import { getSelectedFeatureCollection, prepareAffectedFeatureCollection } from "./topology-report";
 import type { AffectedFeatureCollection } from "./types";
 
 const SOURCE_ID = "topology-affected-features";
+const SELECTED_SOURCE_ID = "topology-selected-feature";
 const FILL_LAYER_ID = "topology-affected-fill";
 const LINE_LAYER_ID = "topology-affected-line";
 const SELECTED_FILL_LAYER_ID = "topology-selected-fill";
@@ -31,6 +32,38 @@ function removeResultsLayers(map: MapLibreMap) {
   });
 
   if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+  if (map.getSource(SELECTED_SOURCE_ID)) map.removeSource(SELECTED_SOURCE_ID);
+}
+
+function flyToFeature(
+  map: MapLibreMap,
+  selectedData: ReturnType<typeof getSelectedFeatureCollection>,
+) {
+  if (selectedData.features.length === 0) return;
+
+  const bounds = getGeoJsonBounds(selectedData);
+  if (!bounds) return;
+
+  const camera = map.cameraForBounds(bounds, {
+    padding: 140,
+    maxZoom: 17,
+  });
+
+  if (camera) {
+    map.flyTo({
+      ...camera,
+      duration: 900,
+      essential: true,
+    });
+    return;
+  }
+
+  map.flyTo({
+    center: [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2],
+    zoom: Math.min(map.getZoom() + 2, 17),
+    duration: 900,
+    essential: true,
+  });
 }
 
 export function useTopologyResultsMap({
@@ -49,52 +82,69 @@ export function useTopologyResultsMap({
 
       if (source) {
         source.setData(data);
-        return;
+      } else {
+        map.addSource(SOURCE_ID, { type: "geojson", data });
       }
 
-      map.addSource(SOURCE_ID, { type: "geojson", data });
-      map.addLayer({
-        id: FILL_LAYER_ID,
-        type: "fill",
-        source: SOURCE_ID,
-        filter: ["==", "$type", "Polygon"],
-        paint: {
-          "fill-color": "#ef4444",
-          "fill-opacity": 0.3,
-        },
-      });
-      map.addLayer({
-        id: LINE_LAYER_ID,
-        type: "line",
-        source: SOURCE_ID,
-        filter: ["any", ["==", "$type", "LineString"], ["==", "$type", "Polygon"]],
-        paint: {
-          "line-color": "#dc2626",
-          "line-width": 3,
-          "line-opacity": 0.95,
-        },
-      });
-      map.addLayer({
-        id: SELECTED_FILL_LAYER_ID,
-        type: "fill",
-        source: SOURCE_ID,
-        filter: ["==", ["get", FEATURE_INDEX_PROPERTY], -1],
-        paint: {
-          "fill-color": "#f87171",
-          "fill-opacity": 0.58,
-        },
-      });
-      map.addLayer({
-        id: SELECTED_LINE_LAYER_ID,
-        type: "line",
-        source: SOURCE_ID,
-        filter: ["==", ["get", FEATURE_INDEX_PROPERTY], -1],
-        paint: {
-          "line-color": "#ffffff",
-          "line-width": 5,
-          "line-opacity": 1,
-        },
-      });
+      if (!map.getLayer(FILL_LAYER_ID)) {
+        map.addLayer({
+          id: FILL_LAYER_ID,
+          type: "fill",
+          source: SOURCE_ID,
+          paint: {
+            "fill-color": "#ef4444",
+            "fill-opacity": 0.34,
+          },
+        });
+      }
+
+      if (!map.getLayer(LINE_LAYER_ID)) {
+        map.addLayer({
+          id: LINE_LAYER_ID,
+          type: "line",
+          source: SOURCE_ID,
+          paint: {
+            "line-color": "#dc2626",
+            "line-width": 3,
+            "line-opacity": 0.95,
+          },
+        });
+      }
+
+      if (!map.getSource(SELECTED_SOURCE_ID)) {
+        map.addSource(SELECTED_SOURCE_ID, {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [],
+          },
+        });
+      }
+
+      if (!map.getLayer(SELECTED_FILL_LAYER_ID)) {
+        map.addLayer({
+          id: SELECTED_FILL_LAYER_ID,
+          type: "fill",
+          source: SELECTED_SOURCE_ID,
+          paint: {
+            "fill-color": "#ef4444",
+            "fill-opacity": 0.72,
+          },
+        });
+      }
+
+      if (!map.getLayer(SELECTED_LINE_LAYER_ID)) {
+        map.addLayer({
+          id: SELECTED_LINE_LAYER_ID,
+          type: "line",
+          source: SELECTED_SOURCE_ID,
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 5,
+            "line-opacity": 1,
+          },
+        });
+      }
     };
 
     if (map.isStyleLoaded()) {
@@ -111,37 +161,33 @@ export function useTopologyResultsMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !affectedFeatures || !map.getLayer(SELECTED_FILL_LAYER_ID)) return;
+    if (!map || !affectedFeatures) return;
 
-    const selectedFilter = [
-      "==",
-      ["get", FEATURE_INDEX_PROPERTY],
-      selectedFeatureIndex ?? -1,
-    ] as const;
+    const selectedData = getSelectedFeatureCollection(affectedFeatures, selectedFeatureIndex);
 
-    map.setFilter(SELECTED_FILL_LAYER_ID, selectedFilter);
-    map.setFilter(SELECTED_LINE_LAYER_ID, selectedFilter);
+    const applySelection = () => {
+      const source = map.getSource(SELECTED_SOURCE_ID) as GeoJSONSource | undefined;
+      if (!source) return false;
 
-    if (selectedFeatureIndex === null) return;
+      source.setData(selectedData);
+      if (selectedFeatureIndex !== null) flyToFeature(map, selectedData);
+      return true;
+    };
 
-    const data = prepareAffectedFeatureCollection(affectedFeatures);
-    const selectedFeature = data.features.find(
-      (feature) => feature.properties?.[FEATURE_INDEX_PROPERTY] === selectedFeatureIndex,
-    );
+    if (applySelection()) return;
 
-    if (!selectedFeature) return;
+    const applyWhenReady = () => {
+      if (!applySelection()) return;
+      map.off("load", applyWhenReady);
+      map.off("idle", applyWhenReady);
+    };
 
-    const bounds = getGeoJsonBounds({
-      type: "FeatureCollection",
-      features: [selectedFeature],
-    });
+    map.once("load", applyWhenReady);
+    map.once("idle", applyWhenReady);
 
-    if (bounds) {
-      map.fitBounds(bounds, {
-        padding: 140,
-        duration: 700,
-        maxZoom: 17,
-      });
-    }
+    return () => {
+      map.off("load", applyWhenReady);
+      map.off("idle", applyWhenReady);
+    };
   }, [affectedFeatures, mapRef, selectedFeatureIndex]);
 }

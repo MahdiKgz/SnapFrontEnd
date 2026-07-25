@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   FEATURE_INDEX_PROPERTY,
   buildFeatureReports,
+  getSelectedFeatureCollection,
   prepareAffectedFeatureCollection,
 } from "./topology-report";
 import type { TopologyIssue, TopologyUploadData } from "./types";
@@ -129,5 +130,16 @@ describe("topology report model", () => {
     expect(sourceData.features[0].properties?.[FEATURE_INDEX_PROPERTY]).toBe(5);
     expect(sourceData.features[1].properties?.[FEATURE_INDEX_PROPERTY]).toBe(7);
     expect(sourceData.features[0].id).toBe("parcel-five");
+  });
+
+  it("builds an isolated map source for the card-selected feature", () => {
+    const selectedData = getSelectedFeatureCollection(
+      createUploadData().report.affectedFeatureCollection,
+      7,
+    );
+
+    expect(selectedData.features).toHaveLength(1);
+    expect(selectedData.features[0].id).toBe("parcel-seven");
+    expect(selectedData.features[0].properties?.[FEATURE_INDEX_PROPERTY]).toBe(7);
   });
 });

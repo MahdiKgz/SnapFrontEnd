@@ -69,3 +69,24 @@ export function prepareAffectedFeatureCollection(
     }),
   };
 }
+
+export function getSelectedFeatureCollection(
+  featureCollection: AffectedFeatureCollection,
+  selectedFeatureIndex: number | null,
+): FeatureCollection<Geometry, GeoJsonProperties> {
+  const preparedFeatures = prepareAffectedFeatureCollection(featureCollection);
+
+  if (selectedFeatureIndex === null) {
+    return {
+      type: "FeatureCollection",
+      features: [],
+    };
+  }
+
+  return {
+    type: "FeatureCollection",
+    features: preparedFeatures.features.filter(
+      (feature) => feature.properties?.[FEATURE_INDEX_PROPERTY] === selectedFeatureIndex,
+    ),
+  };
+}
