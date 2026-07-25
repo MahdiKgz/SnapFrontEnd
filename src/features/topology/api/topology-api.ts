@@ -1,5 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+import type { TopologyHealResponse, TopologyUploadResponse } from "../model/types";
+
 interface StateWithAuth {
   auth: {
     accessToken: string | null;
@@ -21,14 +23,20 @@ export const topologyApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    uploadTopology: builder.mutation<unknown, FormData>({
+    uploadTopology: builder.mutation<TopologyUploadResponse, FormData>({
       query: (formData) => ({
         url: "/upload",
         method: "POST",
         body: formData,
       }),
     }),
+    healTopology: builder.mutation<TopologyHealResponse, string>({
+      query: (path) => ({
+        url: path,
+        method: "POST",
+      }),
+    }),
   }),
 });
 
-export const { useUploadTopologyMutation } = topologyApi;
+export const { useHealTopologyMutation, useUploadTopologyMutation } = topologyApi;

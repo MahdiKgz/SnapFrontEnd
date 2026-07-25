@@ -2,22 +2,28 @@ import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 import { useUploadTopologyMutation } from "../api/topology-api";
+import { storeTopologyJobId } from "./topology-job-storage";
+import type { TopologyUploadData } from "./types";
 
 const ACCEPTED_EXTENSIONS = ["json", "geojson", "kml", "kmz"];
 
 interface UseTopologyUploadOptions {
   clearPreviewError: () => void;
+  onAnalysisComplete: (data: TopologyUploadData) => void;
+  onAnalysisReset: () => void;
   previewFile: (file: File) => Promise<void>;
   removePreview: () => void;
 }
 
 export function useTopologyUpload({
   clearPreviewError,
+  onAnalysisComplete,
+  onAnalysisReset,
   previewFile,
   removePreview,
 }: UseTopologyUploadOptions) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTopology, { isError, isLoading, isSuccess, reset }] = useUploadTopologyMutation();
+  const [uploadTopology, { data, isError, isLoading, reset }] = useUploadTopologyMutation();
   const [name, setName] = useState("");
   const [tolerance, setTolerance] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -68,6 +74,16 @@ export function useTopologyUpload({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const resetAnalysis = () => {
+    setName("");
+    setTolerance("");
+    setSelectedFile(null);
+    resetFeedback();
+    removePreview();
+    onAnalysisReset();
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -90,7 +106,12 @@ export function useTopologyUpload({
     resetFeedback();
 
     try {
-      await Promise.all([uploadTopology(formData).unwrap(), previewFile(selectedFile)]);
+      const [response] = await Promise.all([
+        uploadTopology(formData).unwrap(),
+        previewFile(selectedFile),
+      ]);
+      storeTopologyJobId(response.data.jobId);
+      onAnalysisComplete(response.data);
     } catch {
       // RTK Query exposes the request error through the mutation state.
     }
@@ -104,8 +125,9 @@ export function useTopologyUpload({
     fileInputRef,
     isError,
     isLoading,
-    isSuccess,
     name,
+    resetAnalysis,
+    result: data?.data ?? null,
     selectFile,
     selectedFile,
     submit,

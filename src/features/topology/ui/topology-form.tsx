@@ -1,16 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, FileCode2, UploadCloud, X } from "lucide-react";
+import { FileCode2, UploadCloud, X } from "lucide-react";
 
+import type { TopologyUploadData } from "../model/types";
 import { useTopologyUpload } from "../model/use-topology-upload";
+import { TopologyResults } from "./topology-results";
 
 interface TopologyFormProps {
   clearPreviewError: () => void;
   isPreviewing: boolean;
+  onAnalysisComplete: (data: TopologyUploadData) => void;
+  onAnalysisReset: () => void;
+  onSelectFeature: (featureIndex: number) => void;
   previewError: string;
   previewFile: (file: File) => Promise<void>;
   removePreview: () => void;
+  selectedFeatureIndex: number | null;
 }
 
 const ACCEPTED_FILE_TYPES = ".json,.geojson,.kml,.kmz";
@@ -18,9 +24,13 @@ const ACCEPTED_FILE_TYPES = ".json,.geojson,.kml,.kmz";
 export function TopologyForm({
   clearPreviewError,
   isPreviewing,
+  onAnalysisComplete,
+  onAnalysisReset,
+  onSelectFeature,
   previewError,
   previewFile,
   removePreview,
+  selectedFeatureIndex,
 }: TopologyFormProps) {
   const {
     changeName,
@@ -30,8 +40,9 @@ export function TopologyForm({
     fileInputRef,
     isError,
     isLoading,
-    isSuccess,
     name,
+    resetAnalysis,
+    result,
     selectFile,
     selectedFile,
     submit,
@@ -39,9 +50,22 @@ export function TopologyForm({
     validationError,
   } = useTopologyUpload({
     clearPreviewError,
+    onAnalysisComplete,
+    onAnalysisReset,
     previewFile,
     removePreview,
   });
+
+  if (result) {
+    return (
+      <TopologyResults
+        data={result}
+        selectedFeatureIndex={selectedFeatureIndex}
+        onSelectFeature={onSelectFeature}
+        onReset={resetAnalysis}
+      />
+    );
+  }
 
   return (
     <form onSubmit={submit}>
@@ -153,16 +177,6 @@ export function TopologyForm({
           </p>
         )}
       </div>
-
-      {isSuccess && (
-        <div
-          role="status"
-          className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-400"
-        >
-          <CheckCircle2 className="size-4 shrink-0" />
-          فایل با موفقیت ارسال شد.
-        </div>
-      )}
 
       {isError && (
         <p role="alert" className="mt-4 text-[11px] leading-5 text-red-400">
