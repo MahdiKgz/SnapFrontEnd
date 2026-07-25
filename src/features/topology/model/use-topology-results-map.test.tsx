@@ -35,10 +35,14 @@ describe("useTopologyResultsMap", () => {
   it("updates the selected source and flies to the feature selected by a report card", () => {
     const sources = new Map<string, ReturnType<typeof vi.fn>>();
     const layers = new Set<string>();
+    const layerPaint = new Map<string, Record<string, unknown>>();
     const flyTo = vi.fn();
 
     const map = {
-      addLayer: (layer: { id: string }) => layers.add(layer.id),
+      addLayer: (layer: { id: string; paint?: Record<string, unknown> }) => {
+        layers.add(layer.id);
+        layerPaint.set(layer.id, layer.paint ?? {});
+      },
       addSource: (id: string) => sources.set(id, vi.fn()),
       cameraForBounds: () => ({
         center: [51.5, 35.5],
@@ -87,5 +91,6 @@ describe("useTopologyResultsMap", () => {
         zoom: 16,
       }),
     );
+    expect(layerPaint.get("topology-selected-line")?.["line-color"]).toBe("#7f1d1d");
   });
 });

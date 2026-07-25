@@ -139,7 +139,7 @@ export function useTopologyResultsMap({
           type: "line",
           source: SELECTED_SOURCE_ID,
           paint: {
-            "line-color": "#ffffff",
+            "line-color": "#7f1d1d",
             "line-width": 5,
             "line-opacity": 1,
           },
