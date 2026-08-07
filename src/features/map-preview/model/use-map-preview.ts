@@ -9,7 +9,7 @@ const FILL_LAYER_ID = "uploaded-file-fill";
 const LINE_LAYER_ID = "uploaded-file-line";
 const POINT_LAYER_ID = "uploaded-file-points";
 
-export function useMapPreview(mapRef: RefObject<MapLibreMap | null>) {
+export function useMapPreview(mapRef: RefObject<MapLibreMap | null>, isMapReady: boolean) {
   const [previewError, setPreviewError] = useState("");
   const [isPreviewing, setIsPreviewing] = useState(false);
 
@@ -18,7 +18,7 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>) {
     if (!map) return;
 
     [POINT_LAYER_ID, LINE_LAYER_ID, FILL_LAYER_ID].forEach((layerId) => {
-      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      if (map?.getLayer(layerId)) map.removeLayer(layerId);
     });
 
     if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
@@ -37,8 +37,17 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>) {
           throw new Error("Map is not available.");
         }
 
-        if (!map.isStyleLoaded()) {
-          await new Promise<void>((resolve) => map.once("load", () => resolve()));
+        if (!isMapReady && !map.isStyleLoaded()) {
+          await new Promise<void>((resolve) => {
+            const finishWaiting = () => {
+              map.off("load", finishWaiting);
+              map.off("idle", finishWaiting);
+              resolve();
+            };
+
+            map.once("load", finishWaiting);
+            map.once("idle", finishWaiting);
+          });
         }
 
         const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
@@ -104,7 +113,7 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>) {
         setIsPreviewing(false);
       }
     },
-    [mapRef],
+    [isMapReady, mapRef],
   );
 
   return {

@@ -9,9 +9,9 @@ import { MapToolPanel } from "./map-tool-panel";
 import { ToolPlaceholder } from "./tool-placeholder";
 
 export function MapWorkbench() {
-  const { containerRef, mapRef } = useMapLibreMap();
+  const { containerRef, isMapReady, mapRef } = useMapLibreMap();
   const { clearPreviewError, isPreviewing, previewError, previewFile, removePreview } =
-    useMapPreview(mapRef);
+    useMapPreview(mapRef, isMapReady);
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [topologyResult, setTopologyResult] = useState<TopologyUploadData | null>(null);
@@ -19,6 +19,7 @@ export function MapWorkbench() {
 
   useTopologyResultsMap({
     affectedFeatures: topologyResult?.report.affectedFeatureCollection ?? null,
+    isMapReady,
     mapRef,
     selectedFeatureIndexes,
   });
@@ -59,6 +60,7 @@ export function MapWorkbench() {
             previewError={previewError}
             previewFile={previewFile}
             removePreview={removePreview}
+            result={topologyResult}
           />
         </div>
 

@@ -22,13 +22,14 @@ const LAYER_IDS = [
 
 interface UseTopologyResultsMapOptions {
   affectedFeatures: AffectedFeatureCollection | null;
+  isMapReady: boolean;
   mapRef: RefObject<MapLibreMap | null>;
   selectedFeatureIndexes: number[];
 }
 
 function removeResultsLayers(map: MapLibreMap) {
   LAYER_IDS.forEach((layerId) => {
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (map?.getLayer(layerId)) map.removeLayer(layerId);
   });
 
   if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
@@ -68,12 +69,13 @@ function flyToFeatures(
 
 export function useTopologyResultsMap({
   affectedFeatures,
+  isMapReady,
   mapRef,
   selectedFeatureIndexes,
 }: UseTopologyResultsMapOptions) {
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !affectedFeatures) return;
+    if (!map || !affectedFeatures || !isMapReady) return;
 
     const data = prepareAffectedFeatureCollection(affectedFeatures);
 
@@ -86,7 +88,7 @@ export function useTopologyResultsMap({
         map.addSource(SOURCE_ID, { type: "geojson", data });
       }
 
-      if (!map.getLayer(FILL_LAYER_ID)) {
+      if (!map?.getLayer(FILL_LAYER_ID)) {
         map.addLayer({
           id: FILL_LAYER_ID,
           type: "fill",
@@ -98,7 +100,7 @@ export function useTopologyResultsMap({
         });
       }
 
-      if (!map.getLayer(LINE_LAYER_ID)) {
+      if (!map?.getLayer(LINE_LAYER_ID)) {
         map.addLayer({
           id: LINE_LAYER_ID,
           type: "line",
@@ -121,7 +123,7 @@ export function useTopologyResultsMap({
         });
       }
 
-      if (!map.getLayer(SELECTED_FILL_LAYER_ID)) {
+      if (!map?.getLayer(SELECTED_FILL_LAYER_ID)) {
         map.addLayer({
           id: SELECTED_FILL_LAYER_ID,
           type: "fill",
@@ -133,7 +135,7 @@ export function useTopologyResultsMap({
         });
       }
 
-      if (!map.getLayer(SELECTED_LINE_LAYER_ID)) {
+      if (!map?.getLayer(SELECTED_LINE_LAYER_ID)) {
         map.addLayer({
           id: SELECTED_LINE_LAYER_ID,
           type: "line",
@@ -147,21 +149,16 @@ export function useTopologyResultsMap({
       }
     };
 
-    if (map.isStyleLoaded()) {
-      showResults();
-    } else {
-      map.once("load", showResults);
-    }
+    showResults();
 
     return () => {
-      map.off("load", showResults);
       removeResultsLayers(map);
     };
-  }, [affectedFeatures, mapRef]);
+  }, [affectedFeatures, isMapReady, mapRef]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !affectedFeatures) return;
+    if (!map || !affectedFeatures || !isMapReady) return;
 
     const selectedData = getSelectedFeatureCollection(affectedFeatures, selectedFeatureIndexes);
 
@@ -189,5 +186,5 @@ export function useTopologyResultsMap({
       map.off("load", applyWhenReady);
       map.off("idle", applyWhenReady);
     };
-  }, [affectedFeatures, mapRef, selectedFeatureIndexes]);
+  }, [affectedFeatures, isMapReady, mapRef, selectedFeatureIndexes]);
 }

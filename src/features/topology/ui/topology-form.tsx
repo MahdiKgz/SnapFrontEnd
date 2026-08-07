@@ -16,6 +16,7 @@ interface TopologyFormProps {
   previewError: string;
   previewFile: (file: File) => Promise<void>;
   removePreview: () => void;
+  result: TopologyUploadData | null;
 }
 
 const ACCEPTED_FILE_TYPES = ".json,.geojson,.kml,.kmz";
@@ -29,6 +30,7 @@ export function TopologyForm({
   previewError,
   previewFile,
   removePreview,
+  result,
 }: TopologyFormProps) {
   const {
     changeName,
@@ -40,7 +42,6 @@ export function TopologyForm({
     isLoading,
     name,
     resetAnalysis,
-    result,
     selectFile,
     selectedFile,
     submit,

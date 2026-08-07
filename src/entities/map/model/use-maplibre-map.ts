@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import maplibregl from "maplibre-gl";
 
 export function useMapLibreMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -35,6 +36,9 @@ export function useMapLibreMap() {
       zoom: 11,
     });
 
+    const markMapReady = () => setIsMapReady(true);
+    map.once("load", markMapReady);
+
     map.addControl(new maplibregl.NavigationControl(), "top-left");
     map.addControl(
       new maplibregl.AttributionControl({
@@ -48,10 +52,11 @@ export function useMapLibreMap() {
     mapRef.current = map;
 
     return () => {
+      map.off("load", markMapReady);
       map.remove();
       mapRef.current = null;
     };
   }, []);
 
-  return { containerRef, mapRef };
+  return { containerRef, isMapReady, mapRef };
 }

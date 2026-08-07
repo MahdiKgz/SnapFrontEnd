@@ -23,7 +23,7 @@ export function useTopologyUpload({
   removePreview,
 }: UseTopologyUploadOptions) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTopology, { data, isError, isLoading, reset }] = useUploadTopologyMutation();
+  const [uploadTopology, { isError, isLoading, reset }] = useUploadTopologyMutation();
   const [name, setName] = useState("");
   const [tolerance, setTolerance] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -127,7 +127,6 @@ export function useTopologyUpload({
     isLoading,
     name,
     resetAnalysis,
-    result: data?.data ?? null,
     selectFile,
     selectedFile,
     submit,

@@ -85,11 +85,12 @@ describe("useTopologyResultsMap", () => {
       ({ selectedFeatureIndexes }: { selectedFeatureIndexes: number[] }) =>
         useTopologyResultsMap({
           affectedFeatures,
+          isMapReady: true,
           mapRef,
           selectedFeatureIndexes,
         }),
       {
-        initialProps: { selectedFeatureIndexes: [] },
+        initialProps: { selectedFeatureIndexes: [] as number[] },
       },
     );
 
@@ -112,5 +113,52 @@ describe("useTopologyResultsMap", () => {
       }),
     );
     expect(layerPaint.get("topology-selected-line")?.["line-color"]).toBe("#7f1d1d");
+  });
+
+  it("adds result layers when the map becomes ready after the report arrives", () => {
+    const sources = new Map<string, ReturnType<typeof vi.fn>>();
+    const layers = new Set<string>();
+    const addSource = vi.fn((id: string) => sources.set(id, vi.fn()));
+    const addLayer = vi.fn((layer: { id: string }) => layers.add(layer.id));
+
+    const map = {
+      addLayer,
+      addSource,
+      getLayer: (id: string) => (layers.has(id) ? { id } : undefined),
+      getSource: (id: string) => {
+        const setData = sources.get(id);
+        return setData ? { setData } : undefined;
+      },
+      off: vi.fn(),
+      once: vi.fn(),
+      removeLayer: (id: string) => layers.delete(id),
+      removeSource: (id: string) => sources.delete(id),
+    } as unknown as MapLibreMap;
+    const mapRef = { current: map } as RefObject<MapLibreMap | null>;
+
+    const { rerender } = renderHook(
+      ({ isMapReady }: { isMapReady: boolean }) =>
+        useTopologyResultsMap({
+          affectedFeatures,
+          isMapReady,
+          mapRef,
+          selectedFeatureIndexes: [],
+        }),
+      {
+        initialProps: { isMapReady: false },
+      },
+    );
+
+    expect(addSource).not.toHaveBeenCalled();
+
+    rerender({ isMapReady: true });
+
+    expect(addSource).toHaveBeenCalledWith(
+      "topology-affected-features",
+      expect.objectContaining({ type: "geojson" }),
+    );
+    expect(addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "topology-affected-fill" }),
+    );
   });
 });
