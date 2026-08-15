@@ -6,6 +6,7 @@ Set the backend base URL in a local environment file:
 
 ```bash
 VITE_API_BASE_URL=/api
+VITE_TOPOLOGY_API_URL=http://localhost:3000
 ```
 
 The client sends `POST /auth/login` with `{ phone, password }` and
@@ -27,6 +28,17 @@ following object directly or wrapped in a `data` property:
 
 Successful authentication is persisted in the browser and grants access to `/dashboard`. The
 dashboard logout action clears the stored session.
+
+## SnapGIS healing lifecycle
+
+After dry-run analysis, the topology panel submits `POST /heal/:jobId` and
+polls `GET /heal/:jobId` while the worker is queued or processing. Progress is
+shown in the panel. When the worker completes, the client fetches
+`GET /heal/:jobId/output`, replaces the original map preview with the healed
+GeoJSON, displays a completion notice, and enables the attachment download at
+`GET /heal/:jobId/download`.
+
+`VITE_TOPOLOGY_API_URL` defaults to `http://localhost:3000` when it is not set.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

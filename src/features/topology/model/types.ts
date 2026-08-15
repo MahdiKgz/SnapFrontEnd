@@ -87,5 +87,49 @@ export interface TopologyUploadResponse {
 export interface TopologyHealResponse {
   success: boolean;
   message: string;
-  data?: unknown;
+  data: TopologyHealStatusData;
+}
+
+export type TopologyHealStatus =
+  | "dry-run-complete"
+  | "queued"
+  | "processing"
+  | "completed"
+  | "failed";
+
+export interface TopologyHealOutputLinks {
+  fileName: string;
+  previewPath: string;
+  downloadPath: string;
+}
+
+export interface TopologyHealResult {
+  repairsApplied: number;
+  repairs: Record<string, number>;
+  originalSizeInBytes: number;
+  optimizedSizeInBytes: number;
+  output: TopologyHealOutputLinks | null;
+}
+
+export interface TopologyHealStatusData {
+  jobId: string;
+  dryRunJobId: string;
+  status: TopologyHealStatus;
+  progress: number;
+  queuedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  failedAt: string | null;
+  error: string | null;
+  result: TopologyHealResult | null;
+  links: {
+    status: string;
+    output: string;
+    download: string;
+  };
+}
+
+export interface TopologyHealStatusResponse {
+  success: boolean;
+  data: TopologyHealStatusData;
 }

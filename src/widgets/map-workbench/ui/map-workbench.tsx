@@ -10,15 +10,24 @@ import { ToolPlaceholder } from "./tool-placeholder";
 
 export function MapWorkbench() {
   const { containerRef, isMapReady, mapRef } = useMapLibreMap();
-  const { clearPreviewError, isPreviewing, previewError, previewFile, removePreview } =
-    useMapPreview(mapRef, isMapReady);
+  const {
+    clearPreviewError,
+    isPreviewing,
+    previewError,
+    previewFile,
+    previewGeoJson,
+    removePreview,
+  } = useMapPreview(mapRef, isMapReady);
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [topologyResult, setTopologyResult] = useState<TopologyUploadData | null>(null);
   const [selectedFeatureIndexes, setSelectedFeatureIndexes] = useState<number[]>([]);
+  const [isHealedResultVisible, setIsHealedResultVisible] = useState(false);
 
   useTopologyResultsMap({
-    affectedFeatures: topologyResult?.report.affectedFeatureCollection ?? null,
+    affectedFeatures: isHealedResultVisible
+      ? null
+      : (topologyResult?.report.affectedFeatureCollection ?? null),
     isMapReady,
     mapRef,
     selectedFeatureIndexes,
@@ -51,10 +60,17 @@ export function MapWorkbench() {
             onAnalysisComplete={(result) => {
               setTopologyResult(result);
               setSelectedFeatureIndexes([]);
+              setIsHealedResultVisible(false);
             }}
             onAnalysisReset={() => {
               setTopologyResult(null);
               setSelectedFeatureIndexes([]);
+              setIsHealedResultVisible(false);
+            }}
+            onHealingComplete={async (output) => {
+              setSelectedFeatureIndexes([]);
+              setIsHealedResultVisible(true);
+              await previewGeoJson(output);
             }}
             onSelectFeatures={setSelectedFeatureIndexes}
             previewError={previewError}

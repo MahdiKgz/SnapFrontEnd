@@ -1,6 +1,11 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 
-import type { TopologyHealResponse, TopologyUploadResponse } from "../model/types";
+import type {
+  TopologyHealResponse,
+  TopologyHealStatusResponse,
+  TopologyUploadResponse,
+} from "../model/types";
 
 interface StateWithAuth {
   auth: {
@@ -8,10 +13,13 @@ interface StateWithAuth {
   };
 }
 
+export const TOPOLOGY_API_BASE_URL =
+  import.meta.env.VITE_TOPOLOGY_API_URL ?? "http://localhost:3000";
+
 export const topologyApi = createApi({
   reducerPath: "topologyApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3000",
+    baseUrl: TOPOLOGY_API_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as StateWithAuth).auth.accessToken;
 
@@ -36,7 +44,18 @@ export const topologyApi = createApi({
         method: "POST",
       }),
     }),
+    getHealStatus: builder.query<TopologyHealStatusResponse, string>({
+      query: (jobId) => `/heal/${jobId}`,
+    }),
+    getHealedOutput: builder.query<FeatureCollection<Geometry, GeoJsonProperties>, string>({
+      query: (path) => path,
+    }),
   }),
 });
 
-export const { useHealTopologyMutation, useUploadTopologyMutation } = topologyApi;
+export const {
+  useGetHealStatusQuery,
+  useHealTopologyMutation,
+  useLazyGetHealedOutputQuery,
+  useUploadTopologyMutation,
+} = topologyApi;

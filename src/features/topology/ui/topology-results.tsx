@@ -1,44 +1,59 @@
 import { useState } from "react";
 
+import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import {
   AlertCircle,
   CheckCircle2,
+  Download,
   FilePlus2,
   FileSearch,
   LoaderCircle,
   WandSparkles,
 } from "lucide-react";
 
-import { useHealTopologyMutation } from "../api/topology-api";
 import type { TopologyIssueGroup, TopologyUploadData } from "../model/types";
+import { useTopologyHealing } from "../model/use-topology-healing";
 import { TopologyIssueGroupCard } from "./topology-issue-group-card";
 
 interface TopologyResultsProps {
   data: TopologyUploadData;
+  onHealingComplete: (
+    output: FeatureCollection<Geometry, GeoJsonProperties>,
+  ) => Promise<void> | void;
   onReset: () => void;
   onSelectFeatures: (featureIndexes: number[]) => void;
 }
 
-export function TopologyResults({ data, onReset, onSelectFeatures }: TopologyResultsProps) {
-  const [healTopology, { isError, isLoading, isSuccess }] = useHealTopologyMutation();
-  const [healMessage, setHealMessage] = useState("");
+export function TopologyResults({
+  data,
+  onHealingComplete,
+  onReset,
+  onSelectFeatures,
+}: TopologyResultsProps) {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const { summary } = data.report;
+  const {
+    downloadUrl,
+    isLoadingOutput,
+    isOutputReady,
+    isPolling,
+    isRequesting,
+    lifecycle,
+    outputError,
+    requestError,
+    requestHealing,
+    statusError,
+  } = useTopologyHealing({ data, onHealingComplete });
+  const isHealing =
+    isRequesting ||
+    isPolling ||
+    lifecycle?.status === "queued" ||
+    lifecycle?.status === "processing";
+  const isCompleted = lifecycle?.status === "completed";
 
   const selectIssueGroup = (group: TopologyIssueGroup) => {
     setSelectedGroupId(group.groupId);
     onSelectFeatures(group.affectedFeatureIndexes);
-  };
-
-  const requestAutoRepair = async () => {
-    setHealMessage("");
-
-    try {
-      const response = await healTopology(data.heal.path).unwrap();
-      setHealMessage(response.message);
-    } catch {
-      // The mutation state renders the actionable failure message.
-    }
   };
 
   return (
@@ -76,11 +91,11 @@ export function TopologyResults({ data, onReset, onSelectFeatures }: TopologyRes
             <button
               type="button"
               aria-label="ترمیم خودکار"
-              onClick={() => void requestAutoRepair()}
-              disabled={isLoading}
+              onClick={() => void requestHealing()}
+              disabled={isHealing || isCompleted}
               className="group relative flex size-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-[0_8px_22px_-10px_rgba(16,185,129,0.9)] transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-wait disabled:opacity-70"
             >
-              {isLoading ? (
+              {isHealing ? (
                 <LoaderCircle className="size-5 animate-spin" />
               ) : (
                 <WandSparkles className="size-5" />
@@ -141,23 +156,81 @@ export function TopologyResults({ data, onReset, onSelectFeatures }: TopologyRes
         </dl>
       </div>
 
-      {isSuccess && (
+      {isHealing && (
         <div
           role="status"
-          className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5 text-[11px] leading-5 text-emerald-300"
+          className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 px-3 py-2.5 text-[11px] leading-5 text-sky-300"
         >
-          <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" />
-          {healMessage || "درخواست ترمیم خودکار با موفقیت ثبت شد."}
+          <div className="flex items-center gap-2">
+            <LoaderCircle className="size-3.5 shrink-0 animate-spin" />
+            <span>
+              {lifecycle?.status === "processing"
+                ? "موتور در حال ترمیم فایل است..."
+                : "درخواست ترمیم در صف پردازش قرار گرفت."}
+            </span>
+            <span className="mr-auto font-bold" dir="ltr">
+              {Math.round(lifecycle?.progress ?? 0)}%
+            </span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-sky-950/70">
+            <div
+              className="h-full rounded-full bg-sky-400 transition-[width] duration-300"
+              style={{ width: `${Math.max(2, lifecycle?.progress ?? 0)}%` }}
+            />
+          </div>
         </div>
       )}
 
-      {isError && (
+      {isCompleted && (
+        <div
+          role="status"
+          className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-[11px] leading-5 text-emerald-300"
+        >
+          <div className="flex items-start gap-2">
+            {isLoadingOutput ? (
+              <LoaderCircle className="mt-0.5 size-3.5 shrink-0 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" />
+            )}
+            <div>
+              <p className="font-bold">ترمیم فایل با موفقیت کامل شد.</p>
+              <p className="text-emerald-300/80">
+                {isOutputReady
+                  ? "نتیجه ترمیم‌شده روی نقشه نمایش داده شد."
+                  : outputError
+                    ? "فایل آماده است اما نمایش آن روی نقشه انجام نشد."
+                    : "در حال بارگذاری نتیجه ترمیم‌شده روی نقشه..."}
+              </p>
+              {lifecycle.result && (
+                <p className="mt-1 text-emerald-200">
+                  {lifecycle.result.repairsApplied.toLocaleString("fa-IR")} عملیات اصلاح ثبت شد.
+                </p>
+              )}
+            </div>
+          </div>
+          {downloadUrl && (
+            <a
+              href={downloadUrl}
+              download={lifecycle.result?.output?.fileName}
+              className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 font-bold text-white transition-colors hover:bg-emerald-400"
+            >
+              <Download className="size-4" />
+              دانلود فایل ترمیم‌شده
+            </a>
+          )}
+        </div>
+      )}
+
+      {(requestError || statusError || outputError || lifecycle?.status === "failed") && (
         <div
           role="alert"
           className="mt-3 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-[11px] leading-5 text-red-300"
         >
           <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
-          ثبت درخواست ترمیم خودکار انجام نشد. دوباره تلاش کنید.
+          {lifecycle?.error ||
+            (outputError
+              ? "فایل ترمیم‌شده آماده است اما نمایش آن روی نقشه انجام نشد."
+              : "پیگیری درخواست ترمیم انجام نشد. دوباره تلاش کنید.")}
         </div>
       )}
 

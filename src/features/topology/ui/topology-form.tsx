@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import { FileCode2, UploadCloud, X } from "lucide-react";
 
 import type { TopologyUploadData } from "../model/types";
@@ -12,6 +13,9 @@ interface TopologyFormProps {
   isPreviewing: boolean;
   onAnalysisComplete: (data: TopologyUploadData) => void;
   onAnalysisReset: () => void;
+  onHealingComplete: (
+    output: FeatureCollection<Geometry, GeoJsonProperties>,
+  ) => Promise<void> | void;
   onSelectFeatures: (featureIndexes: number[]) => void;
   previewError: string;
   previewFile: (file: File) => Promise<void>;
@@ -26,6 +30,7 @@ export function TopologyForm({
   isPreviewing,
   onAnalysisComplete,
   onAnalysisReset,
+  onHealingComplete,
   onSelectFeatures,
   previewError,
   previewFile,
@@ -57,7 +62,12 @@ export function TopologyForm({
 
   if (result) {
     return (
-      <TopologyResults data={result} onSelectFeatures={onSelectFeatures} onReset={resetAnalysis} />
+      <TopologyResults
+        data={result}
+        onHealingComplete={onHealingComplete}
+        onSelectFeatures={onSelectFeatures}
+        onReset={resetAnalysis}
+      />
     );
   }
 
