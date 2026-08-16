@@ -28,12 +28,13 @@ export function useMapLibreMap() {
             type: "raster",
             source: "osm-tiles",
             minzoom: 0,
-            maxzoom: 19,
+            maxzoom: 24,
           },
         ],
       },
       center: [51.389, 35.689],
       zoom: 11,
+      maxZoom: 28,
     });
 
     const markMapReady = () => setIsMapReady(true);
