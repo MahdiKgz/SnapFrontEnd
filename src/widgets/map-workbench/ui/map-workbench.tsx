@@ -113,7 +113,7 @@ export function MapWorkbench() {
         onClose={() => setIsPanelOpen(false)}
         onSelectTool={selectTool}
       >
-        <div hidden={activeTool !== "topology"}>
+        <div className="overflow-x-hidden!" hidden={activeTool !== "topology"}>
           <TopologyForm
             clearPreviewError={clearPreviewError}
             isPreviewing={isPreviewing}
