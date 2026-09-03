@@ -24,6 +24,20 @@ interface TopologyResultsProps {
   onSelectFeatures: (featureIndexes: number[]) => void;
 }
 
+const PROGRESS_STAGE_LABELS = {
+  parsing: "خواندن و تبدیل فایل",
+  "error-detection": "شناسایی خطاها",
+  healing: "ترمیم عوارض",
+  "report-generation": "ساخت خروجی و گزارش",
+} as const;
+
+const ISSUE_COUNT_LABELS = {
+  gap: "شکاف",
+  sliver: "پلیگون باریک",
+  kink: "شکستگی",
+  spike: "نوک تیز",
+} as const;
+
 export function TopologyResults({
   data,
   onHealingComplete,
@@ -36,7 +50,7 @@ export function TopologyResults({
     downloadUrl,
     isLoadingOutput,
     isOutputReady,
-    isPolling,
+    isStreaming,
     isRequesting,
     lifecycle,
     outputError,
@@ -44,9 +58,11 @@ export function TopologyResults({
     requestHealing,
     statusError,
   } = useTopologyHealing({ data, onHealingComplete });
+  const hasOnlyManualReviewIssues =
+    summary.autoRepairableIssues === 0 && summary.manualReviewIssues > 0;
   const isHealing =
     isRequesting ||
-    isPolling ||
+    isStreaming ||
     lifecycle?.status === "queued" ||
     lifecycle?.status === "processing";
   const isCompleted = lifecycle?.status === "completed";
@@ -92,7 +108,7 @@ export function TopologyResults({
               type="button"
               aria-label="ترمیم خودکار"
               onClick={() => void requestHealing()}
-              disabled={isHealing || isCompleted}
+              disabled={isHealing || isCompleted || hasOnlyManualReviewIssues}
               className="group relative flex size-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-[0_8px_22px_-10px_rgba(16,185,129,0.9)] transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-wait disabled:opacity-70"
             >
               {isHealing ? (
@@ -104,7 +120,7 @@ export function TopologyResults({
                 role="tooltip"
                 className="pointer-events-none absolute top-[calc(100%+0.5rem)] left-1/2 z-30 w-max -translate-x-1/2 -translate-y-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[10px] font-medium whitespace-nowrap text-slate-100 opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
               >
-                ترمیم خودکار
+                {hasOnlyManualReviewIssues ? "هیچ ترمیم خودکاری در دسترس نیست" : "ترمیم خودکار"}
               </span>
             </button>
           </div>
@@ -115,9 +131,7 @@ export function TopologyResults({
         <div className="flex items-center gap-2">
           <FileSearch className="size-4 text-slate-400" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold text-slate-200">
-              {data.name}
-            </p>
+            <p className="truncate text-xs font-semibold text-slate-200">{data.name}</p>
             <p className="mt-0.5 truncate text-[10px] text-slate-500" dir="ltr">
               {data.originalName}
             </p>
@@ -161,6 +175,18 @@ export function TopologyResults({
         </dl>
       </div>
 
+      {hasOnlyManualReviewIssues && (
+        <div
+          role="status"
+          className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-[11px] leading-5 text-amber-300"
+        >
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+          <span>
+            هیچ ترمیم خودکاری در دسترس نیست؛ همه خطاهای شناسایی‌شده نیازمند بررسی دستی هستند.
+          </span>
+        </div>
+      )}
+
       {isHealing && (
         <div
           role="status"
@@ -169,9 +195,11 @@ export function TopologyResults({
           <div className="flex items-center gap-2">
             <LoaderCircle className="size-3.5 shrink-0 animate-spin" />
             <span>
-              {lifecycle?.status === "processing"
-                ? "موتور در حال ترمیم فایل است..."
-                : "درخواست ترمیم در صف پردازش قرار گرفت."}
+              {lifecycle?.progressDetail
+                ? PROGRESS_STAGE_LABELS[lifecycle.progressDetail.stage]
+                : lifecycle?.status === "processing"
+                  ? "موتور در حال ترمیم فایل است..."
+                  : "درخواست ترمیم در صف پردازش قرار گرفت."}
             </span>
             <span className="mr-auto font-bold" dir="ltr">
               {Math.round(lifecycle?.progress ?? 0)}%
@@ -183,6 +211,18 @@ export function TopologyResults({
               style={{ width: `${Math.max(2, lifecycle?.progress ?? 0)}%` }}
             />
           </div>
+          {lifecycle?.progressDetail && (
+            <dl className="mt-2 grid grid-cols-4 gap-1.5">
+              {Object.entries(lifecycle.progressDetail.issueCounts).map(([key, count]) => (
+                <div key={key} className="rounded-md bg-sky-950/45 px-1.5 py-1 text-center">
+                  <dt className="truncate text-[8px] text-sky-300/70">
+                    {ISSUE_COUNT_LABELS[key as keyof typeof ISSUE_COUNT_LABELS]}
+                  </dt>
+                  <dd className="mt-0.5 font-bold text-sky-200">{count.toLocaleString("fa-IR")}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </div>
       )}
 

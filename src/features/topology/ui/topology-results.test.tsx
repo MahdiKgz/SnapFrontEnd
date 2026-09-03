@@ -5,24 +5,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TopologyUploadData } from "../model/types";
 import { TopologyResults } from "./topology-results";
 
-const { healTopology, loadHealedOutput } = vi.hoisted(() => ({
+const { healTopology, loadHealedOutput, streamHealingEvents } = vi.hoisted(() => ({
   healTopology: vi.fn(),
   loadHealedOutput: vi.fn(),
+  streamHealingEvents: vi.fn(),
 }));
+
+vi.mock("@/app/store/hooks", () => ({
+  useAppSelector: (selector: (state: { auth: { accessToken: string } }) => unknown) =>
+    selector({ auth: { accessToken: "test-access-token" } }),
+}));
+
+vi.mock("../api/heal-events", () => ({ streamHealingEvents }));
 
 vi.mock("../api/topology-api", () => ({
   TOPOLOGY_API_BASE_URL: "http://localhost:3000",
   buildTopologyApiUrl: (path: string) => `http://localhost:3000${path}`,
-  useGetHealStatusQuery: (_jobId: string, options: { skip: boolean }) =>
-    options.skip
-      ? { data: undefined, isError: false }
-      : {
-          data: {
-            success: true,
-            data: completedLifecycle,
-          },
-          isError: false,
-        },
   useHealTopologyMutation: () => [
     healTopology,
     {
@@ -41,6 +39,7 @@ const baseLifecycle = {
   completedAt: null,
   failedAt: null,
   error: null,
+  progressDetail: null,
   result: null,
   links: {
     status: "/heal/job-123",
@@ -73,6 +72,18 @@ const completedLifecycle = {
   },
 };
 
+const progressLifecycle = {
+  ...baseLifecycle,
+  status: "processing" as const,
+  progress: 60,
+  startedAt: "2026-08-15T10:00:01.000Z",
+  progressDetail: {
+    value: 60,
+    stage: "healing" as const,
+    issueCounts: { gap: 1, sliver: 2, kink: 3, spike: 4 },
+  },
+};
+
 const data: TopologyUploadData = {
   jobId: "job-123",
   userId: "6c2d5ee6-9852-4ddd-86db-f62582ef93de",
@@ -90,8 +101,8 @@ const data: TopologyUploadData = {
       issuesFound: 2,
       issueGroups: 1,
       affectedFeatures: 1,
-      autoRepairableIssues: 0,
-      manualReviewIssues: 2,
+      autoRepairableIssues: 1,
+      manualReviewIssues: 1,
     },
     issueGroups: [
       {
@@ -141,6 +152,11 @@ describe("TopologyResults", () => {
           features: [],
         }),
     });
+    streamHealingEvents.mockImplementation(
+      async ({ onEvent }: { onEvent: (event: unknown) => void }) => {
+        onEvent({ id: "1", event: "completed", data: completedLifecycle });
+      },
+    );
   });
 
   it("places the new-file action beside auto-repair and resets from the header", () => {
@@ -169,6 +185,39 @@ describe("TopologyResults", () => {
     expect(onSelectFeatures).toHaveBeenCalledWith([5]);
   });
 
+  it("disables healing when every finding requires manual review", () => {
+    const manualOnlyData: TopologyUploadData = {
+      ...data,
+      report: {
+        ...data.report,
+        summary: {
+          ...data.report.summary,
+          autoRepairableIssues: 0,
+          manualReviewIssues: data.report.summary.issuesFound,
+        },
+      },
+    };
+
+    render(
+      <TopologyResults
+        data={manualOnlyData}
+        onHealingComplete={vi.fn()}
+        onReset={vi.fn()}
+        onSelectFeatures={vi.fn()}
+      />,
+    );
+
+    const healButton = screen.getByRole("button", { name: "ترمیم خودکار" });
+    expect(healButton.hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.getByText(
+        "هیچ ترمیم خودکاری در دسترس نیست؛ همه خطاهای شناسایی‌شده نیازمند بررسی دستی هستند.",
+      ),
+    ).toBeTruthy();
+    fireEvent.click(healButton);
+    expect(healTopology).not.toHaveBeenCalled();
+  });
+
   it("notifies, previews, and exposes download after worker completion", async () => {
     const onHealingComplete = vi.fn();
     render(
@@ -183,9 +232,41 @@ describe("TopologyResults", () => {
     fireEvent.click(screen.getByRole("button", { name: "ترمیم خودکار" }));
 
     await waitFor(() => expect(onHealingComplete).toHaveBeenCalledOnce());
+    expect(streamHealingEvents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessToken: "test-access-token",
+        url: "http://localhost:3000/heal/job-123/events",
+      }),
+    );
     expect(loadHealedOutput).toHaveBeenCalledWith("/heal/job-123/output");
     expect(screen.getByText("ترمیم فایل با موفقیت کامل شد.")).toBeTruthy();
     const download = screen.getByRole("link", { name: "دانلود فایل ترمیم‌شده" });
     expect(download.getAttribute("href")).toBe("http://localhost:3000/heal/job-123/download");
+  });
+
+  it("renders streamed stage progress and live topology counters", async () => {
+    streamHealingEvents.mockImplementation(
+      async ({ onEvent, signal }: { onEvent: (event: unknown) => void; signal: AbortSignal }) => {
+        onEvent({ id: "2", event: "progress", data: progressLifecycle });
+        await new Promise<void>((resolve) => signal.addEventListener("abort", () => resolve()));
+      },
+    );
+
+    render(
+      <TopologyResults
+        data={data}
+        onHealingComplete={vi.fn()}
+        onReset={vi.fn()}
+        onSelectFeatures={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "ترمیم خودکار" }));
+
+    await waitFor(() => expect(screen.getByText("ترمیم عوارض")).toBeTruthy());
+    expect(screen.getByText("شکاف")).toBeTruthy();
+    expect(screen.getByText("پلیگون باریک")).toBeTruthy();
+    expect(screen.getByText("شکستگی")).toBeTruthy();
+    expect(screen.getByText("نوک تیز")).toBeTruthy();
+    expect(screen.getByText("60%")).toBeTruthy();
   });
 });

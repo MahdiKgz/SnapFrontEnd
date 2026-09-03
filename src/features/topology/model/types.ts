@@ -123,6 +123,16 @@ export interface TopologyHealStatusData {
   completedAt: string | null;
   failedAt: string | null;
   error: string | null;
+  progressDetail: {
+    value: number;
+    stage: "parsing" | "error-detection" | "healing" | "report-generation";
+    issueCounts: {
+      gap: number;
+      sliver: number;
+      kink: number;
+      spike: number;
+    };
+  } | null;
   result: TopologyHealResult | null;
   links: {
     status: string;
