@@ -35,7 +35,7 @@ function UnauthorizedPage() {
             بازگشت به خانه
           </Link>
           <Link
-            to="/auth/login"
+            to="/login"
             state={{ from: location.pathname }}
             className={cn(buttonVariants(), "h-10 gap-2 px-5")}
           >

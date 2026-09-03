@@ -85,6 +85,8 @@ export function TopologyForm({
           id="layer-name"
           name="name"
           required
+          minLength={2}
+          maxLength={150}
           value={name}
           onChange={(event) => changeName(event.target.value)}
           placeholder="برای مثال: محدوده قطعات"

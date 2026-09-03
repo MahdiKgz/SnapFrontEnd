@@ -114,9 +114,14 @@ export function TopologyResults({
       <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
         <div className="flex items-center gap-2">
           <FileSearch className="size-4 text-slate-400" />
-          <p className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-200" dir="ltr">
-            {data.originalName}
-          </p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold text-slate-200">
+              {data.name}
+            </p>
+            <p className="mt-0.5 truncate text-[10px] text-slate-500" dir="ltr">
+              {data.originalName}
+            </p>
+          </div>
           <span
             className={`rounded-full px-2 py-1 text-[9px] font-bold ${
               data.report.valid

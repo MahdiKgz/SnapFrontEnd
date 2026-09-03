@@ -1,14 +1,13 @@
-import React from "react";
-
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { authApi } from "@/features/auth/api/auth-api";
+import { useLogoutMutation } from "@/features/auth/api/auth-api";
 import { logout } from "@/features/auth/model/auth-slice";
 import { Layers, LogOut, Map, Settings, ShieldAlert, User } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 const NAVIGATION_ITEMS = [
-  { path: "/dashboard/map", title: "میز کار نقشه", icon: <Map className="h-4 w-4" /> },
-  { path: "/dashboard/layers", title: "مدیریت لایه‌ها", icon: <Layers className="h-4 w-4" /> },
+  { path: "/map", title: "میز کار نقشه", icon: <Map className="h-4 w-4" /> },
+  { path: "/dashboard", title: "خلاصه فایل‌ها", icon: <Layers className="h-4 w-4" /> },
+  { path: "/dashboard/files", title: "مدیریت فایل‌ها", icon: <Layers className="h-4 w-4" /> },
   { path: "/dashboard/errors", title: "گزارش‌های خطا", icon: <ShieldAlert className="h-4 w-4" /> },
   { path: "/dashboard/settings", title: "تنظیمات سیستم", icon: <Settings className="h-4 w-4" /> },
 ];
@@ -17,11 +16,17 @@ export function DashboardLayout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
+  const [revokeSession, { isLoading: isLoggingOut }] = useLogoutMutation();
 
-  const handleLogout = () => {
-    dispatch(logout());
-    dispatch(authApi.util.resetApiState());
-    navigate("/auth/login", { replace: true });
+  const handleLogout = async () => {
+    try {
+      await revokeSession().unwrap();
+    } catch {
+      // Local sign-out must still complete when the server is unavailable.
+    } finally {
+      dispatch(logout());
+      navigate("/login", { replace: true });
+    }
   };
 
   return (
@@ -46,6 +51,7 @@ export function DashboardLayout() {
               <NavLink
                 key={item.path}
                 to={item.path}
+                end={item.path === "/dashboard"}
                 className={({ isActive }) => `
                   flex items-center gap-3 px-4 h-10 rounded-lg text-sm transition-all duration-200 group
                   ${
@@ -79,11 +85,12 @@ export function DashboardLayout() {
           </div>
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => void handleLogout()}
+            disabled={isLoggingOut}
             className="flex items-center gap-3 px-4 h-10 w-full rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors text-right"
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            <span className="font-medium">خروج از حساب</span>
+            <span className="font-medium">{isLoggingOut ? "در حال خروج..." : "خروج از حساب"}</span>
           </button>
         </div>
       </aside>

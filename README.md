@@ -9,14 +9,13 @@ VITE_API_BASE_URL=http://localhost:3000/api
 VITE_TOPOLOGY_API_URL=http://localhost:3000/api
 ```
 
-The client sends `POST /auth/login` with `{ phone, password }` and
-`POST /auth/register` with `{ name, phone, password }`. Both endpoints should return either the
-following object directly or wrapped in a `data` property:
+The `/login` and `/register` pages send `POST /auth/login` with `{ phone, password }` and
+`POST /auth/register` with `{ name, phone, password }`. Both endpoints return the following object
+inside a `data` property:
 
 ```json
 {
   "accessToken": "token",
-  "refreshToken": "optional-refresh-token",
   "user": {
     "id": "user-id",
     "name": "User name",
@@ -26,8 +25,12 @@ following object directly or wrapped in a `data` property:
 }
 ```
 
-Successful authentication is persisted in the browser and grants access to `/dashboard`. The
-dashboard logout action clears the stored session.
+Successful authentication is persisted in the browser and redirects to `/dashboard`, or back to
+the protected URL that originally required login. Refresh sessions remain in an HttpOnly cookie;
+the client refreshes access tokens automatically and returns users to `/login` when the refresh
+session has expired. Authenticated users who visit `/login` or `/register` are redirected to
+`/dashboard`. The dashboard logout action revokes the refresh session and clears all cached user
+data.
 
 ## SnapGIS healing lifecycle
 

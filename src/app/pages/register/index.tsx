@@ -1,15 +1,17 @@
 import { useState } from "react";
 
+import { useAppDispatch } from "@/app/store/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRegisterMutation } from "@/features/auth/api/auth-api";
 import { getAuthErrorMessage } from "@/features/auth/lib/get-auth-error-message";
+import { getPostAuthRedirect } from "@/features/auth/lib/post-auth-redirect";
+import { setCredentials } from "@/features/auth/model/auth-slice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock, Smartphone, User, UserCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -26,6 +28,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [createAccount, { isLoading }] = useRegisterMutation();
+  const dispatch = useAppDispatch();
+  const location = useLocation();
   const navigate = useNavigate();
   const {
     register,
@@ -43,8 +47,9 @@ function RegisterPage() {
 
   const submitRegistration = handleSubmit(async (values) => {
     try {
-      await createAccount(values).unwrap();
-      navigate("/dashboard", { replace: true });
+      const credentials = await createAccount(values).unwrap();
+      dispatch(setCredentials(credentials));
+      navigate(getPostAuthRedirect(location.state), { replace: true });
     } catch (error) {
       setError("root", { message: getAuthErrorMessage(error) });
     }
@@ -192,7 +197,11 @@ function RegisterPage() {
         {/* هدایت به صفحه ورود */}
         <p className="mt-8 text-sm text-center text-muted-foreground font-light">
           قبلاً ثبت‌نام کرده‌اید؟{" "}
-          <Link to="/auth/login" className="text-primary font-medium hover:underline">
+          <Link
+            to="/login"
+            state={location.state}
+            className="text-primary font-medium hover:underline"
+          >
             ورود به حساب کاربری
           </Link>
         </p>

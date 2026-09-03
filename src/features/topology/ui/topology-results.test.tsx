@@ -12,6 +12,7 @@ const { healTopology, loadHealedOutput } = vi.hoisted(() => ({
 
 vi.mock("../api/topology-api", () => ({
   TOPOLOGY_API_BASE_URL: "http://localhost:3000",
+  buildTopologyApiUrl: (path: string) => `http://localhost:3000${path}`,
   useGetHealStatusQuery: (_jobId: string, options: { skip: boolean }) =>
     options.skip
       ? { data: undefined, isError: false }
@@ -74,6 +75,8 @@ const completedLifecycle = {
 
 const data: TopologyUploadData = {
   jobId: "job-123",
+  userId: "6c2d5ee6-9852-4ddd-86db-f62582ef93de",
+  name: "Parcel boundaries",
   status: "dry-run-complete",
   originalName: "parcels.geojson",
   sizeInBytes: 1024,

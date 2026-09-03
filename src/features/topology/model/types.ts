@@ -67,6 +67,8 @@ export interface TopologyDryRunReport {
 
 export interface TopologyUploadData {
   jobId: string;
+  userId: string;
+  name: string;
   status: "dry-run-complete" | string;
   originalName: string;
   sizeInBytes: number;

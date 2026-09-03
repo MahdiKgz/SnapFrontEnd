@@ -1,25 +1,26 @@
 import { type PayloadAction, createSlice } from "@reduxjs/toolkit";
 
+import { isAccessTokenExpired } from "./access-token";
 import { clearStoredCredentials, readStoredCredentials, storeCredentials } from "./auth-storage";
-import type { AuthCredentials, AuthUser } from "./types";
+import type { AuthCredentials, AuthStatus, AuthUser } from "./types";
 
 export interface AuthState {
+  status: AuthStatus;
   accessToken: string | null;
-  refreshToken: string | null;
   user: AuthUser | null;
 }
 
 const storedCredentials = readStoredCredentials();
 
 const initialState: AuthState = {
+  status: storedCredentials ? "authenticated" : "checking",
   accessToken: storedCredentials?.accessToken ?? null,
-  refreshToken: storedCredentials?.refreshToken ?? null,
   user: storedCredentials?.user ?? null,
 };
 
 const initialStateWithoutCredentials: AuthState = {
+  status: "anonymous",
   accessToken: null,
-  refreshToken: null,
   user: null,
 };
 
@@ -28,13 +29,21 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (_state, action: PayloadAction<AuthCredentials>) => {
+      if (isAccessTokenExpired(action.payload.accessToken)) {
+        clearStoredCredentials();
+        return initialStateWithoutCredentials;
+      }
+
       storeCredentials(action.payload);
 
       return {
+        status: "authenticated" as const,
         accessToken: action.payload.accessToken,
-        refreshToken: action.payload.refreshToken ?? null,
         user: action.payload.user,
       };
+    },
+    checkSession: (state) => {
+      state.status = "checking";
     },
     logout: () => {
       clearStoredCredentials();
@@ -43,5 +52,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, setCredentials } = authSlice.actions;
+export const { checkSession, logout, setCredentials } = authSlice.actions;
 export default authSlice.reducer;

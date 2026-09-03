@@ -1,4 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createReauthenticatingBaseQuery } from "@/features/auth/api/auth-base-query";
+import { createApi } from "@reduxjs/toolkit/query/react";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 
 import type {
@@ -7,32 +8,38 @@ import type {
   TopologyUploadResponse,
 } from "../model/types";
 
-interface StateWithAuth {
-  auth: {
-    accessToken: string | null;
-  };
-}
-
 export const TOPOLOGY_API_BASE_URL =
   import.meta.env.VITE_TOPOLOGY_API_URL ??
   import.meta.env.VITE_API_BASE_URL ??
   "http://localhost:3000/api";
 
+const topologyBasePath = (() => {
+  try {
+    const path = new URL(TOPOLOGY_API_BASE_URL, "http://snapgis.local").pathname;
+    return path === "/" ? "" : path.replace(/\/$/, "");
+  } catch {
+    return "";
+  }
+})();
+
+export const normalizeTopologyApiPath = (path: string): string => {
+  if (/^https?:\/\//i.test(path)) return path;
+  if (topologyBasePath && (path === topologyBasePath || path.startsWith(`${topologyBasePath}/`))) {
+    return path.slice(topologyBasePath.length) || "/";
+  }
+  return path;
+};
+
+export const buildTopologyApiUrl = (path: string): string => {
+  const normalized = normalizeTopologyApiPath(path);
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  return `${TOPOLOGY_API_BASE_URL.replace(/\/$/, "")}/${normalized.replace(/^\//, "")}`;
+};
+
 export const topologyApi = createApi({
   reducerPath: "topologyApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: TOPOLOGY_API_BASE_URL,
-    credentials: "include",
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as StateWithAuth).auth.accessToken;
-
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-
-      return headers;
-    },
-  }),
+  baseQuery: createReauthenticatingBaseQuery(TOPOLOGY_API_BASE_URL),
+  tagTypes: ["Files"],
   endpoints: (builder) => ({
     uploadTopology: builder.mutation<TopologyUploadResponse, FormData>({
       query: (formData) => ({
@@ -40,10 +47,11 @@ export const topologyApi = createApi({
         method: "POST",
         body: formData,
       }),
+      invalidatesTags: [{ type: "Files", id: "LIST" }],
     }),
     healTopology: builder.mutation<TopologyHealResponse, string>({
       query: (path) => ({
-        url: path,
+        url: normalizeTopologyApiPath(path),
         method: "POST",
       }),
     }),
@@ -51,7 +59,7 @@ export const topologyApi = createApi({
       query: (jobId) => `/heal/${jobId}`,
     }),
     getHealedOutput: builder.query<FeatureCollection<Geometry, GeoJsonProperties>, string>({
-      query: (path) => path,
+      query: (path) => normalizeTopologyApiPath(path),
     }),
   }),
 });

@@ -5,14 +5,18 @@ import authReducer, { logout, setCredentials } from "./auth-slice";
 import type { AuthCredentials } from "./types";
 
 const credentials: AuthCredentials = {
-  accessToken: "access-token",
-  refreshToken: "refresh-token",
+  accessToken: createToken(Math.floor(Date.now() / 1000) + 3600),
   user: {
     id: "user-1",
     name: "کاربر آزمایشی",
     phone: "09123456789",
+    roles: ["user"],
   },
 };
+
+function createToken(expiration: number) {
+  return `header.${btoa(JSON.stringify({ exp: expiration }))}.signature`;
+}
 
 describe("auth slice", () => {
   beforeEach(() => {
@@ -23,8 +27,8 @@ describe("auth slice", () => {
     const state = authReducer(undefined, setCredentials(credentials));
 
     expect(state).toEqual({
+      status: "authenticated",
       accessToken: credentials.accessToken,
-      refreshToken: credentials.refreshToken,
       user: credentials.user,
     });
     expect(JSON.parse(localStorage.getItem("snapgis.auth") ?? "")).toEqual(credentials);
@@ -35,10 +39,24 @@ describe("auth slice", () => {
     const state = authReducer(authenticatedState, logout());
 
     expect(state).toEqual({
+      status: "anonymous",
       accessToken: null,
-      refreshToken: null,
       user: null,
     });
+    expect(localStorage.getItem("snapgis.auth")).toBeNull();
+  });
+
+  it("rejects credentials containing an expired access token", () => {
+    const state = authReducer(
+      undefined,
+      setCredentials({
+        ...credentials,
+        accessToken: createToken(Math.floor(Date.now() / 1000) - 1),
+      }),
+    );
+
+    expect(state.status).toBe("anonymous");
+    expect(state.accessToken).toBeNull();
     expect(localStorage.getItem("snapgis.auth")).toBeNull();
   });
 });

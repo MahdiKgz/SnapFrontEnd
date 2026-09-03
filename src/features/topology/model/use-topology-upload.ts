@@ -87,6 +87,12 @@ export function useTopologyUpload({
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const trimmedName = name.trim();
+    if (trimmedName.length < 2 || trimmedName.length > 150) {
+      setValidationError("نام فایل باید بین ۲ تا ۱۵۰ نویسه باشد.");
+      return;
+    }
+
     if (!selectedFile) {
       setFileError("لطفاً فایل داده مکانی را انتخاب کنید.");
       return;
@@ -99,7 +105,7 @@ export function useTopologyUpload({
     }
 
     const formData = new FormData();
-    formData.append("name", name.trim());
+    formData.append("name", trimmedName);
     formData.append("tolerance", tolerance);
     formData.append("file", selectedFile, selectedFile.name);
 

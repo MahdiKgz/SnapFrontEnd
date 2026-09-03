@@ -29,6 +29,8 @@ function createIssue(featureIndex: number, code: string): TopologyIssue {
 function createUploadData(): TopologyUploadData {
   return {
     jobId: "job-123",
+    userId: "6c2d5ee6-9852-4ddd-86db-f62582ef93de",
+    name: "Parcel boundaries",
     status: "dry-run-complete",
     originalName: "parcels.geojson",
     sizeInBytes: 1024,

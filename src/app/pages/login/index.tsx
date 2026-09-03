@@ -1,10 +1,13 @@
 import { useState } from "react";
 
+import { useAppDispatch } from "@/app/store/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLoginMutation } from "@/features/auth/api/auth-api";
 import { getAuthErrorMessage } from "@/features/auth/lib/get-auth-error-message";
+import { getPostAuthRedirect } from "@/features/auth/lib/post-auth-redirect";
+import { setCredentials } from "@/features/auth/model/auth-slice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock, ShieldCheck, Smartphone } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -24,6 +27,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [login, { isLoading }] = useLoginMutation();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -41,10 +45,9 @@ function LoginPage() {
 
   const submitLogin = handleSubmit(async (values) => {
     try {
-      await login(values).unwrap();
-
-      const requestedPath = (location.state as { from?: string } | null)?.from;
-      navigate(requestedPath ?? "/dashboard", { replace: true });
+      const credentials = await login(values).unwrap();
+      dispatch(setCredentials(credentials));
+      navigate(getPostAuthRedirect(location.state), { replace: true });
     } catch (error) {
       setError("root", { message: getAuthErrorMessage(error) });
     }
@@ -168,7 +171,11 @@ function LoginPage() {
         {/* هدایت به ثبت‌نام */}
         <p className="mt-8 text-sm text-center text-muted-foreground font-light">
           حساب کاربری ندارید؟{" "}
-          <Link to="/auth/register" className="text-primary font-medium hover:underline">
+          <Link
+            to="/register"
+            state={location.state}
+            className="text-primary font-medium hover:underline"
+          >
             ایجاد حساب کاربری جدید
           </Link>
         </p>

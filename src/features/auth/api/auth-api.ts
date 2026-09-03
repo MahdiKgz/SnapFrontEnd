@@ -1,35 +1,11 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
 
-import { type AuthState, setCredentials } from "../model/auth-slice";
 import type { AuthCredentials, LoginRequest, RegisterRequest } from "../model/types";
-
-interface StateWithAuth {
-  auth: AuthState;
-}
-
-interface WrappedAuthResponse {
-  data: AuthCredentials;
-}
-
-function unwrapAuthResponse(response: AuthCredentials | WrappedAuthResponse) {
-  return "data" in response ? response.data : response;
-}
+import { createAuthBaseQuery, unwrapAuthResponse } from "./auth-base-query";
 
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api",
-    credentials: "include",
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as StateWithAuth).auth.accessToken;
-
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-
-      return headers;
-    },
-  }),
+  baseQuery: createAuthBaseQuery(),
   endpoints: (builder) => ({
     login: builder.mutation<AuthCredentials, LoginRequest>({
       query: (credentials) => ({
@@ -38,14 +14,6 @@ export const authApi = createApi({
         body: credentials,
       }),
       transformResponse: unwrapAuthResponse,
-      async onQueryStarted(_credentials, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          dispatch(setCredentials(data));
-        } catch {
-          // The mutation exposes the server error to the form.
-        }
-      },
     }),
     register: builder.mutation<AuthCredentials, RegisterRequest>({
       query: (account) => ({
@@ -54,16 +22,16 @@ export const authApi = createApi({
         body: account,
       }),
       transformResponse: unwrapAuthResponse,
-      async onQueryStarted(_account, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          dispatch(setCredentials(data));
-        } catch {
-          // The mutation exposes the server error to the form.
-        }
-      },
+    }),
+    refresh: builder.mutation<AuthCredentials, void>({
+      query: () => ({ url: "/auth/refresh", method: "POST" }),
+      transformResponse: unwrapAuthResponse,
+    }),
+    logout: builder.mutation<void, void>({
+      query: () => ({ url: "/auth/logout", method: "POST" }),
     }),
   }),
 });
 
-export const { useLoginMutation, useRegisterMutation } = authApi;
+export const { useLoginMutation, useLogoutMutation, useRefreshMutation, useRegisterMutation } =
+  authApi;

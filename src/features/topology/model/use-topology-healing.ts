@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 
 import {
-  TOPOLOGY_API_BASE_URL,
+  buildTopologyApiUrl,
   useGetHealStatusQuery,
   useHealTopologyMutation,
   useLazyGetHealedOutputQuery,
@@ -79,7 +79,7 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
   }, [applyLifecycle, data.heal.path, healTopology]);
 
   const downloadUrl = lifecycle?.result?.output?.downloadPath
-    ? `${TOPOLOGY_API_BASE_URL}${lifecycle.result.output.downloadPath}`
+    ? buildTopologyApiUrl(lifecycle.result.output.downloadPath)
     : null;
 
   return {

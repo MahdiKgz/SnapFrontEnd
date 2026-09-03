@@ -1,15 +1,17 @@
 export interface AuthUser {
-  id?: string;
-  name?: string;
+  id: string;
+  name: string;
   phone: string;
-  roles?: string[];
+  roles: string[];
+  createdAt?: string;
 }
 
 export interface AuthCredentials {
   accessToken: string;
-  refreshToken?: string;
   user: AuthUser;
 }
+
+export type AuthStatus = "checking" | "authenticated" | "anonymous";
 
 export interface LoginRequest {
   phone: string;

@@ -1,4 +1,5 @@
 import { ProtectedRoute } from "@/features/auth/ui/protected-route";
+import { PublicOnlyRoute } from "@/features/auth/ui/public-only-route";
 import MapPage from "@/pages/map";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
@@ -9,7 +10,6 @@ import ContactPage from "../pages/home/contact";
 import PricingPage from "../pages/home/pricing";
 import LoginPage from "../pages/login";
 import RegisterPage from "../pages/register";
-import UnauthorizedPage from "../pages/unauthorized";
 import AuthLayout from "./auth-layout";
 import { DashboardLayout } from "./dashboard-layout";
 import PublicLayout from "./public-layout";
@@ -17,7 +17,11 @@ import PublicLayout from "./public-layout";
 export const appRouter = createBrowserRouter([
   {
     path: "/map",
-    element: <MapPage />,
+    element: (
+      <ProtectedRoute>
+        <MapPage />
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -43,38 +47,50 @@ export const appRouter = createBrowserRouter([
   },
 
   {
-    path: "/auth",
-    element: <AuthLayout />,
+    element: (
+      <PublicOnlyRoute>
+        <AuthLayout />
+      </PublicOnlyRoute>
+    ),
     children: [
       {
-        index: true,
-        element: <Navigate to="login" replace />,
-      },
-      {
-        path: "login",
+        path: "/login",
         element: <LoginPage />,
       },
       {
-        path: "register",
+        path: "/register",
         element: <RegisterPage />,
       },
     ],
   },
 
   {
+    path: "/auth",
+    children: [
+      { index: true, element: <Navigate to="/login" replace /> },
+      { path: "login", element: <Navigate to="/login" replace /> },
+      { path: "register", element: <Navigate to="/register" replace /> },
+    ],
+  },
+
+  {
     path: "/dashboard",
     element: (
-      <ProtectedRoute fallback={<UnauthorizedPage />}>
+      <ProtectedRoute>
         <DashboardLayout />
       </ProtectedRoute>
     ),
     children: [
       {
         index: true,
-        element: <Navigate to="overview" replace />,
+        element: <Overview />,
       },
       {
         path: "overview",
+        element: <Overview />,
+      },
+      {
+        path: "files",
         element: <Overview />,
       },
       {

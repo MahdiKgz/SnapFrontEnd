@@ -94,7 +94,7 @@ function Header() {
 
         {/* سمت چپ: دکمه‌های ورود و اکشن */}
         <div className="flex items-center gap-3">
-          <Link to="/auth/login">
+          <Link to="/login">
             <Button
               variant="ghost"
               className="text-xs font-medium text-muted-foreground hover:text-foreground"
