@@ -49,6 +49,25 @@ export interface UserFilesResponse {
   data: UserFilesPage;
 }
 
+export interface UserDashboardSummary {
+  plan: {
+    code: "free";
+    name: string;
+    expiresAt: null;
+    remainingDays: null;
+  };
+  usage: {
+    files: number;
+    identifiedIssues: number;
+    healedIssues: number;
+  };
+}
+
+export interface UserDashboardSummaryResponse {
+  success: boolean;
+  data: UserDashboardSummary;
+}
+
 export interface UserFileResponse<T = UserFileDetail> {
   success: boolean;
   data: T;

@@ -3,7 +3,14 @@ export {
   useDeleteUserFileMutation,
   useGetUserFileQuery,
   useGetUserFilesQuery,
+  useGetUserDashboardSummaryQuery,
   useRenameUserFileMutation,
 } from "./api/files-api";
-export type { UserFileDetail, UserFileStatus, UserFileSummary } from "./model/types";
+export type {
+  UserDashboardSummary,
+  UserFileDetail,
+  UserFileStatus,
+  UserFileSummary,
+} from "./model/types";
+export { DashboardOverview } from "./ui/dashboard-overview";
 export { FileManagementDashboard } from "./ui/file-management-dashboard";

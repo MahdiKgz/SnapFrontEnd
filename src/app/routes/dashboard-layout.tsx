@@ -1,15 +1,15 @@
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { useLogoutMutation } from "@/features/auth/api/auth-api";
 import { logout } from "@/features/auth/model/auth-slice";
-import { Layers, LogOut, Map, Settings, ShieldAlert, User } from "lucide-react";
+import { Layers, LayoutDashboard, LogOut, Map, Settings, ShieldAlert, User } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 const NAVIGATION_ITEMS = [
-  { path: "/map", title: "میز کار نقشه", icon: <Map className="h-4 w-4" /> },
-  { path: "/dashboard", title: "خلاصه فایل‌ها", icon: <Layers className="h-4 w-4" /> },
+  { path: "/dashboard", title: "پیشخوان", icon: <LayoutDashboard className="h-4 w-4" /> },
   { path: "/dashboard/files", title: "مدیریت فایل‌ها", icon: <Layers className="h-4 w-4" /> },
-  { path: "/dashboard/errors", title: "گزارش‌های خطا", icon: <ShieldAlert className="h-4 w-4" /> },
-  { path: "/dashboard/settings", title: "تنظیمات سیستم", icon: <Settings className="h-4 w-4" /> },
+  { path: "/map", title: "میز کار نقشه", icon: <Map className="h-4 w-4" /> },
+  // { path: "/dashboard/errors", title: "گزارش‌های خطا", icon: <ShieldAlert className="h-4 w-4" /> },
+  // { path: "/dashboard/settings", title: "تنظیمات سیستم", icon: <Settings className="h-4 w-4" /> },
 ];
 
 export function DashboardLayout() {

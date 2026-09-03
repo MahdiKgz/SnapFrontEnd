@@ -47,7 +47,10 @@ export const topologyApi = createApi({
         method: "POST",
         body: formData,
       }),
-      invalidatesTags: [{ type: "Files", id: "LIST" }],
+      invalidatesTags: [
+        { type: "Files", id: "LIST" },
+        { type: "Files", id: "SUMMARY" },
+      ],
     }),
     healTopology: builder.mutation<TopologyHealResponse, string>({
       query: (path) => ({

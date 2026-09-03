@@ -1,7 +1,7 @@
-import { FileManagementDashboard } from "@/features/files";
+import { DashboardOverview } from "@/features/files";
 
 function Overview() {
-  return <FileManagementDashboard />;
+  return <DashboardOverview />;
 }
 
 export default Overview;

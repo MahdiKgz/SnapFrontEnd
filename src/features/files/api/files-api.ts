@@ -1,5 +1,6 @@
 import { topologyApi } from "../../topology/api/topology-api";
 import type {
+  UserDashboardSummaryResponse,
   UserFileDetail,
   UserFileResponse,
   UserFileSummary,
@@ -10,6 +11,10 @@ export const DEFAULT_FILES_LIMIT = 10;
 
 export const filesApi = topologyApi.injectEndpoints({
   endpoints: (builder) => ({
+    getUserDashboardSummary: builder.query<UserDashboardSummaryResponse, void>({
+      query: () => "/files/summary",
+      providesTags: [{ type: "Files", id: "SUMMARY" }],
+    }),
     getUserFiles: builder.query<UserFilesResponse, { skip?: number; limit?: number } | void>({
       query: (pagination) => ({
         url: "/files",
@@ -46,6 +51,7 @@ export const filesApi = topologyApi.injectEndpoints({
       invalidatesTags: (_result, _error, id) => [
         { type: "Files", id },
         { type: "Files", id: "LIST" },
+        { type: "Files", id: "SUMMARY" },
       ],
     }),
   }),
@@ -55,5 +61,6 @@ export const {
   useDeleteUserFileMutation,
   useGetUserFileQuery,
   useGetUserFilesQuery,
+  useGetUserDashboardSummaryQuery,
   useRenameUserFileMutation,
 } = filesApi;

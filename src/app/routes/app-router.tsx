@@ -3,6 +3,7 @@ import { PublicOnlyRoute } from "@/features/auth/ui/public-only-route";
 import MapPage from "@/pages/map";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
+import FilesPage from "../pages/dashboard/files";
 import Overview from "../pages/dashboard/overview";
 import Home from "../pages/home";
 import BlogPage from "../pages/home/blog";
@@ -91,7 +92,7 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: "files",
-        element: <Overview />,
+        element: <FilesPage />,
       },
       {
         path: "map",
