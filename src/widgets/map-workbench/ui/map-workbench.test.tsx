@@ -19,7 +19,15 @@ vi.mock("@/entities/map", () => ({
   useMapLibreMap: () => ({
     containerRef: { current: null },
     isMapReady: true,
-    mapRef: { current: { resize: vi.fn() } },
+    mapRef: {
+      current: {
+        resize: vi.fn(),
+        getCenter: () => ({ lng: 51.389, lat: 35.689 }),
+        getZoom: () => 11,
+        on: vi.fn(),
+        off: vi.fn(),
+      },
+    },
   }),
 }));
 

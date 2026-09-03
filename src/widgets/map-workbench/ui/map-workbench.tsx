@@ -13,6 +13,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { type MapToolId } from "../model/map-tools";
 import { MapToolPanel } from "./map-tool-panel";
+import { PointerCoordinate } from "./pointer-coordinate";
 import { ToolPlaceholder } from "./tool-placeholder";
 
 export function MapWorkbench() {
@@ -82,6 +83,7 @@ export function MapWorkbench() {
   return (
     <div className="relative h-dvh min-h-[32rem] w-full overflow-hidden bg-slate-100" dir="rtl">
       <MapCanvas containerRef={containerRef} />
+      <PointerCoordinate isMapReady={isMapReady} mapRef={mapRef} />
 
       {healedFileId && healedOutputRequest.isFetching && (
         <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-slate-700/70 bg-slate-950/90 px-4 py-3 text-xs text-slate-100 shadow-xl backdrop-blur">
