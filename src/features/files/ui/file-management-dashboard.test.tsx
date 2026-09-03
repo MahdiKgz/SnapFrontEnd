@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -81,7 +81,7 @@ describe("FileManagementDashboard", () => {
     deleteFile.mockReturnValue({ unwrap: () => Promise.resolve() });
   });
 
-  it("shows the paginated user file summary and detailed healing results", () => {
+  it("shows the paginated summary and animates the detail modal", async () => {
     render(
       <MemoryRouter>
         <FileManagementDashboard />
@@ -93,9 +93,14 @@ describe("FileManagementDashboard", () => {
     expect(screen.getByText("صفحه ۱ از ۱")).toBeTruthy();
 
     fireEvent.click(screen.getByLabelText("مشاهده Parcel layer"));
-    expect(screen.getByRole("dialog", { name: "جزئیات فایل" })).toBeTruthy();
+    const dialog = screen.getByRole("dialog", { name: "جزئیات فایل" });
+    expect(dialog.className).toContain("animate-in");
     expect(screen.getByText("DUPLICATE_VERTEX")).toBeTruthy();
     expect(screen.getByText("رأس‌های تکراری حذف‌شده")).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "بستن" }));
+    expect(dialog.className).toContain("animate-out");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "جزئیات فایل" })).toBeNull());
   });
 
   it("renames a file and asks for confirmation before deletion", async () => {

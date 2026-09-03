@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -110,39 +110,64 @@ function Modal({
   onClose,
   title,
 }: {
-  children: ReactNode;
+  children: ReactNode | ((close: () => void) => ReactNode);
   onClose: () => void;
   title: string;
 }) {
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
+  const [isClosing, setIsClosing] = useState(false);
+  const isClosingRef = useRef(false);
+  const closeTimer = useRef<number | null>(null);
+  const close = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    setIsClosing(true);
+    closeTimer.current = window.setTimeout(onClose, 180);
   }, [onClose]);
 
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    };
+  }, [close]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 motion-reduce:animate-none ${
+        isClosing
+          ? "pointer-events-none animate-out fade-out duration-200"
+          : "animate-in fade-in duration-200"
+      }`}
+    >
       <button
         type="button"
         aria-label="بستن پنجره"
-        className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
-        onClick={onClose}
+        className={`absolute inset-0 bg-slate-950/70 backdrop-blur-sm motion-reduce:animate-none ${
+          isClosing ? "animate-out fade-out-0 duration-200" : "animate-in fade-in-0 duration-200"
+        }`}
+        onClick={close}
       />
       <section
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl"
+        className={`relative z-10 max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl motion-reduce:animate-none ${
+          isClosing
+            ? "animate-out fade-out-0 zoom-out-95 slide-out-to-bottom-3 duration-200 ease-in"
+            : "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out"
+        }`}
       >
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-5 py-4 backdrop-blur">
           <h2 className="text-base font-bold text-foreground">{title}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="بستن">
+          <Button variant="ghost" size="icon" onClick={close} aria-label="بستن">
             <X />
           </Button>
         </header>
-        {children}
+        {typeof children === "function" ? children(close) : children}
       </section>
     </div>
   );
@@ -276,7 +301,7 @@ function RenameDialog({ file, onClose }: { file: UserFileSummary; onClose: () =>
   const [error, setError] = useState("");
   const [renameFile, { isLoading }] = useRenameUserFileMutation();
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>, close: () => void) => {
     event.preventDefault();
     const normalizedName = name.trim();
     if (normalizedName.length < 2 || normalizedName.length > 150) {
@@ -285,7 +310,7 @@ function RenameDialog({ file, onClose }: { file: UserFileSummary; onClose: () =>
     }
     try {
       await renameFile({ id: file.id, name: normalizedName }).unwrap();
-      onClose();
+      close();
     } catch (requestError) {
       setError(getRequestError(requestError));
     }
@@ -293,38 +318,40 @@ function RenameDialog({ file, onClose }: { file: UserFileSummary; onClose: () =>
 
   return (
     <Modal title="ویرایش نام فایل" onClose={onClose}>
-      <form className="space-y-4 p-5" onSubmit={(event) => void submit(event)}>
-        <div>
-          <label htmlFor="edit-file-name" className="text-xs font-medium text-muted-foreground">
-            نام نمایشی
-          </label>
-          <Input
-            id="edit-file-name"
-            className="mt-2 h-10"
-            minLength={2}
-            maxLength={150}
-            required
-            autoFocus
-            value={name}
-            onChange={(event) => {
-              setName(event.target.value);
-              setError("");
-            }}
-          />
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            نام اصلی، زمان بارگذاری و نتایج تحلیل قابل ویرایش نیستند.
-          </p>
-          {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
-        </div>
-        <div className="flex justify-end gap-2 border-t border-border pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
-            انصراف
-          </Button>
-          <Button type="submit" disabled={isLoading || name.trim() === file.name}>
-            {isLoading ? "در حال ذخیره..." : "ذخیره تغییرات"}
-          </Button>
-        </div>
-      </form>
+      {(close) => (
+        <form className="space-y-4 p-5" onSubmit={(event) => void submit(event, close)}>
+          <div>
+            <label htmlFor="edit-file-name" className="text-xs font-medium text-muted-foreground">
+              نام نمایشی
+            </label>
+            <Input
+              id="edit-file-name"
+              className="mt-2 h-10"
+              minLength={2}
+              maxLength={150}
+              required
+              autoFocus
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                setError("");
+              }}
+            />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              نام اصلی، زمان بارگذاری و نتایج تحلیل قابل ویرایش نیستند.
+            </p>
+            {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+          </div>
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button type="button" variant="outline" onClick={close}>
+              انصراف
+            </Button>
+            <Button type="submit" disabled={isLoading || name.trim() === file.name}>
+              {isLoading ? "در حال ذخیره..." : "ذخیره تغییرات"}
+            </Button>
+          </div>
+        </form>
+      )}
     </Modal>
   );
 }
