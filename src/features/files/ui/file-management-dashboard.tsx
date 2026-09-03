@@ -12,12 +12,13 @@ import {
   FileSearch,
   Files,
   LoaderCircle,
+  MapPinned,
   Pencil,
   RefreshCw,
   Trash2,
   X,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
   DEFAULT_FILES_LIMIT,
@@ -174,6 +175,7 @@ function Modal({
 }
 
 function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => void }) {
+  const navigate = useNavigate();
   const { data, isError, isFetching, refetch } = useGetUserFileQuery(fileId);
   const file = data?.data;
   const repairs = Object.entries(file?.healing.result?.repairs ?? {}).filter(
@@ -278,6 +280,17 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
                 </p>
               )}
             </section>
+
+            <Button
+              type="button"
+              className="h-10 w-full gap-2"
+              disabled={!file.isHealed || !file.healing.result?.output?.previewPath}
+              title={file.isHealed ? "نمایش خروجی ترمیم‌شده" : "این فایل هنوز ترمیم نشده است"}
+              onClick={() => navigate(`/map?healedFile=${encodeURIComponent(file.id)}`)}
+            >
+              <MapPinned />
+              {file.isHealed ? "نمایش عوارض ترمیم‌شده روی نقشه" : "نمایش روی نقشه پس از ترمیم"}
+            </Button>
           </>
         )}
       </div>

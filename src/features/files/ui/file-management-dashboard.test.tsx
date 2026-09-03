@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FileManagementDashboard } from "./file-management-dashboard";
@@ -23,6 +23,13 @@ const summary = {
   issuesFound: 2,
 };
 
+let detailIsHealed = true;
+
+function LocationProbe() {
+  const location = useLocation();
+  return <output aria-label="مسیر فعلی">{`${location.pathname}${location.search}`}</output>;
+}
+
 vi.mock("../api/files-api", () => ({
   DEFAULT_FILES_LIMIT: 10,
   useGetUserFilesQuery: () => ({
@@ -42,6 +49,8 @@ vi.mock("../api/files-api", () => ({
       success: true,
       data: {
         ...summary,
+        status: detailIsHealed ? "completed" : "dry-run-complete",
+        isHealed: detailIsHealed,
         mimeType: "application/geo+json",
         report: {
           valid: false,
@@ -58,9 +67,12 @@ vi.mock("../api/files-api", () => ({
         healing: {
           completedAt: "2026-09-03T06:35:00.000Z",
           error: null,
-          result: {
-            repairs: { duplicateVerticesRemoved: 2 },
-          },
+          result: detailIsHealed
+            ? {
+                repairs: { duplicateVerticesRemoved: 2 },
+                output: { previewPath: `/heal/${summary.id}/output` },
+              }
+            : null,
         },
       },
     },
@@ -77,6 +89,7 @@ describe("FileManagementDashboard", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    detailIsHealed = true;
     renameFile.mockReturnValue({ unwrap: () => Promise.resolve() });
     deleteFile.mockReturnValue({ unwrap: () => Promise.resolve() });
   });
@@ -97,10 +110,40 @@ describe("FileManagementDashboard", () => {
     expect(dialog.className).toContain("animate-in");
     expect(screen.getByText("DUPLICATE_VERTEX")).toBeTruthy();
     expect(screen.getByText("رأس‌های تکراری حذف‌شده")).toBeTruthy();
+    expect(
+      screen
+        .getByRole("button", { name: "نمایش عوارض ترمیم‌شده روی نقشه" })
+        .hasAttribute("disabled"),
+    ).toBe(false);
 
     fireEvent.click(within(dialog).getByRole("button", { name: "بستن" }));
     expect(dialog.className).toContain("animate-out");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "جزئیات فایل" })).toBeNull());
+  });
+
+  it("opens a healed file on the map and disables the action before healing", () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={["/dashboard/files"]}>
+        <FileManagementDashboard />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByLabelText("مشاهده Parcel layer"));
+    fireEvent.click(screen.getByRole("button", { name: "نمایش عوارض ترمیم‌شده روی نقشه" }));
+    expect(screen.getByLabelText("مسیر فعلی").textContent).toBe(`/map?healedFile=${summary.id}`);
+
+    unmount();
+    detailIsHealed = false;
+    render(
+      <MemoryRouter>
+        <FileManagementDashboard />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByLabelText("مشاهده Parcel layer"));
+    expect(
+      screen.getByRole("button", { name: "نمایش روی نقشه پس از ترمیم" }).hasAttribute("disabled"),
+    ).toBe(true);
   });
 
   it("renames a file and asks for confirmation before deletion", async () => {
