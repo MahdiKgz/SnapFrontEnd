@@ -14,12 +14,15 @@ interface StateWithAuth {
 }
 
 export const TOPOLOGY_API_BASE_URL =
-  import.meta.env.VITE_TOPOLOGY_API_URL ?? "http://localhost:3000";
+  import.meta.env.VITE_TOPOLOGY_API_URL ??
+  import.meta.env.VITE_API_BASE_URL ??
+  "http://localhost:3000/api";
 
 export const topologyApi = createApi({
   reducerPath: "topologyApi",
   baseQuery: fetchBaseQuery({
     baseUrl: TOPOLOGY_API_BASE_URL,
+    credentials: "include",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as StateWithAuth).auth.accessToken;
 

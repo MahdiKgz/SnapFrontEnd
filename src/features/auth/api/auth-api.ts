@@ -18,7 +18,8 @@ function unwrapAuthResponse(response: AuthCredentials | WrappedAuthResponse) {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL ?? "/api",
+    baseUrl: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api",
+    credentials: "include",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as StateWithAuth).auth.accessToken;
 
