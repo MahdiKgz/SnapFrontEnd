@@ -33,11 +33,11 @@ AutoCAD (DWG/DGN) input phase, where longer-running jobs make them matter more.
 
 ## 2. SSE — moderate tier (before real users hit long jobs)
 
-- [ ] **Reconnect via `Last-Event-ID`**: assign an incrementing `id` to every emitted
+- [x] **Reconnect via `Last-Event-ID`**: assign an incrementing `id` to every emitted
       SSE event; persist a short event history per job (e.g. a Redis list) so a
       reconnecting client can request replay from its last seen id instead of losing
       state after a dropped connection.
-- [ ] **Cross-page sync**: move from a per-job SSE subscription to a per-user channel
+- [x] **Cross-page sync**: move from a per-job SSE subscription to a per-user channel
       (or maintain multiple subscriptions) so a completed/failed job can trigger a
       global toast and a live row update in the file summary table even when the user
       has navigated away from that file's page. Requires a small global state layer
@@ -45,22 +45,22 @@ AutoCAD (DWG/DGN) input phase, where longer-running jobs make them matter more.
 
 ## 3. Map view — "view on map" from the summary table
 
-- [ ] Add a button per row (and ideally per flagged error within a row) in the file
+- [x] Add a button per row (and ideally per flagged error within a row) in the file
       summary table that deep-links to the map, centered on that file's extent or,
       for a specific error row, zoomed to that error's coordinates.
-- [ ] **Default view = healed result.** This is the primary deliverable; show it by
+- [x] **Default view = healed result.** This is the primary deliverable; show it by
       default, not the raw upload.
-- [ ] Add a toggle (or ghost/overlay layer) to show the **original** geometry alongside
+- [x] Add a toggle (or ghost/overlay layer) to show the **original** geometry alongside
       the healed one, so a specialist can visually verify what changed. A simple on/off
       toggle is enough for v1; a swipe/compare control can come later.
-- [ ] Render any features still pending **manual review** as distinct markers on the
+- [x] Render any features still pending **manual review** as distinct markers on the
       same map (not just in the separate review list), and make clicking one open the
       same review detail panel already built (badge + reason + coordinates +
       approve/reject/manual-edit) — reuse that pattern rather than inventing a new one.
 
 ## 4. Deferred — do once AutoCAD (DWG/DGN) phase starts
 
-- [ ] **Cancel button**: cooperative cancellation in the worker (periodic check of a
+- [x] **Cancel button**: cooperative cancellation in the worker (periodic check of a
       cancel flag) plus a cancel action in the UI. Low value for short shapefile jobs;
       becomes important once CAD files make jobs longer and more expensive to run to
       completion unnecessarily.
@@ -68,8 +68,9 @@ AutoCAD (DWG/DGN) input phase, where longer-running jobs make them matter more.
 ---
 
 ## Notes for whoever implements this
+
 - Sections 1 and 3 can be built in parallel — they touch different parts of the stack
-  (worker/SSE vs. table/map UI) and section 3 only needs the *existing* completed-job
+  (worker/SSE vs. table/map UI) and section 3 only needs the _existing_ completed-job
   data, not the new staged-progress events.
 - Section 2 and section 4 are explicitly lower priority — don't start them before
   sections 1 and 3 are done and shipped.

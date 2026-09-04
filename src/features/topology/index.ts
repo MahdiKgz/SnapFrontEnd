@@ -1,7 +1,10 @@
 export {
   topologyApi,
+  useCancelHealingMutation,
   useHealTopologyMutation,
   useLazyGetHealedOutputQuery,
+  useLazyGetOriginalInputQuery,
+  useUpdateManualReviewMutation,
   useUploadTopologyMutation,
 } from "./api/topology-api";
 export { useTopologyResultsMap } from "./model/use-topology-results-map";

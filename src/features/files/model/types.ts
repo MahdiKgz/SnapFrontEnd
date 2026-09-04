@@ -1,4 +1,8 @@
-import type { TopologyDryRunReport, TopologyHealResult } from "../../topology/model/types";
+import type {
+  ManualReviewDecision,
+  TopologyDryRunReport,
+  TopologyHealResult,
+} from "../../topology/model/types";
 
 export type UserFileStatus =
   | "dry-run-complete"
@@ -6,6 +10,7 @@ export type UserFileStatus =
   | "processing"
   | "completed"
   | "failed"
+  | "cancelled"
   | "unavailable";
 
 export interface UserFileSummary {
@@ -32,6 +37,7 @@ export interface UserFileDetail extends UserFileSummary {
     error: string | null;
     result: TopologyHealResult | null;
   };
+  reviewDecisions: Record<string, ManualReviewDecision>;
 }
 
 export interface UserFilesPage {

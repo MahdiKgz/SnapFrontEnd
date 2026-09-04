@@ -3,6 +3,8 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 
 import type {
+  ManualReviewAction,
+  ManualReviewDecision,
   TopologyHealResponse,
   TopologyHealStatusResponse,
   TopologyUploadResponse,
@@ -64,12 +66,36 @@ export const topologyApi = createApi({
     getHealedOutput: builder.query<FeatureCollection<Geometry, GeoJsonProperties>, string>({
       query: (path) => normalizeTopologyApiPath(path),
     }),
+    getOriginalInput: builder.query<FeatureCollection<Geometry, GeoJsonProperties>, string>({
+      query: (jobId) => `/heal/${jobId}/original`,
+    }),
+    cancelHealing: builder.mutation<TopologyHealResponse, string>({
+      query: (jobId) => ({ url: `/heal/${jobId}/cancel`, method: "POST" }),
+      invalidatesTags: (_result, _error, jobId) => [
+        { type: "Files", id: jobId },
+        { type: "Files", id: "LIST" },
+      ],
+    }),
+    updateManualReview: builder.mutation<
+      { success: boolean; data: { issueIndex: number; decision: ManualReviewDecision } },
+      { jobId: string; issueIndex: number; action: ManualReviewAction }
+    >({
+      query: ({ jobId, issueIndex, action }) => ({
+        url: `/heal/${jobId}/reviews/${issueIndex}`,
+        method: "PATCH",
+        body: { action },
+      }),
+      invalidatesTags: (_result, _error, { jobId }) => [{ type: "Files", id: jobId }],
+    }),
   }),
 });
 
 export const {
   useGetHealStatusQuery,
+  useCancelHealingMutation,
   useHealTopologyMutation,
+  useLazyGetOriginalInputQuery,
   useLazyGetHealedOutputQuery,
+  useUpdateManualReviewMutation,
   useUploadTopologyMutation,
 } = topologyApi;

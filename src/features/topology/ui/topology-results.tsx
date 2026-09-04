@@ -8,6 +8,7 @@ import {
   FilePlus2,
   FileSearch,
   LoaderCircle,
+  OctagonX,
   WandSparkles,
 } from "lucide-react";
 
@@ -47,7 +48,9 @@ export function TopologyResults({
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const { summary } = data.report;
   const {
+    cancelHealing,
     downloadUrl,
+    isCancelling,
     isLoadingOutput,
     isOutputReady,
     isStreaming,
@@ -223,6 +226,28 @@ export function TopologyResults({
               ))}
             </dl>
           )}
+          <button
+            type="button"
+            className="mt-3 flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 font-bold text-red-300 transition-colors hover:bg-red-500/20 disabled:opacity-60"
+            disabled={isCancelling}
+            onClick={() => void cancelHealing()}
+          >
+            {isCancelling ? (
+              <LoaderCircle className="size-3.5 animate-spin" />
+            ) : (
+              <OctagonX className="size-3.5" />
+            )}
+            {isCancelling ? "در حال لغو..." : "لغو ترمیم"}
+          </button>
+        </div>
+      )}
+
+      {lifecycle?.status === "cancelled" && (
+        <div
+          role="status"
+          className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-[11px] text-amber-300"
+        >
+          عملیات ترمیم لغو شد. می‌توانید دوباره آن را آغاز کنید.
         </div>
       )}
 

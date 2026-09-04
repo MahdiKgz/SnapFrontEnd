@@ -5,13 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TopologyUploadData } from "../model/types";
 import { TopologyResults } from "./topology-results";
 
-const { healTopology, loadHealedOutput, streamHealingEvents } = vi.hoisted(() => ({
+const { cancelTopology, healTopology, loadHealedOutput, streamHealingEvents } = vi.hoisted(() => ({
+  cancelTopology: vi.fn(),
   healTopology: vi.fn(),
   loadHealedOutput: vi.fn(),
   streamHealingEvents: vi.fn(),
 }));
 
 vi.mock("@/app/store/hooks", () => ({
+  useAppDispatch: () => vi.fn(),
   useAppSelector: (selector: (state: { auth: { accessToken: string } }) => unknown) =>
     selector({ auth: { accessToken: "test-access-token" } }),
 }));
@@ -21,6 +23,7 @@ vi.mock("../api/heal-events", () => ({ streamHealingEvents }));
 vi.mock("../api/topology-api", () => ({
   TOPOLOGY_API_BASE_URL: "http://localhost:3000",
   buildTopologyApiUrl: (path: string) => `http://localhost:3000${path}`,
+  useCancelHealingMutation: () => [cancelTopology, { isLoading: false }],
   useHealTopologyMutation: () => [
     healTopology,
     {
@@ -141,9 +144,18 @@ describe("TopologyResults", () => {
 
   beforeEach(() => {
     healTopology.mockReset();
+    cancelTopology.mockReset();
     loadHealedOutput.mockReset();
     healTopology.mockReturnValue({
       unwrap: () => Promise.resolve({ success: true, message: "queued", data: queuedLifecycle }),
+    });
+    cancelTopology.mockReturnValue({
+      unwrap: () =>
+        Promise.resolve({
+          success: true,
+          message: "cancelled",
+          data: { ...baseLifecycle, status: "cancelled" },
+        }),
     });
     loadHealedOutput.mockReturnValue({
       unwrap: () =>
@@ -268,5 +280,7 @@ describe("TopologyResults", () => {
     expect(screen.getByText("شکستگی")).toBeTruthy();
     expect(screen.getByText("نوک تیز")).toBeTruthy();
     expect(screen.getByText("60%")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "لغو ترمیم" }));
+    await waitFor(() => expect(cancelTopology).toHaveBeenCalledWith("job-123"));
   });
 });

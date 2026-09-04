@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useCancelHealingMutation } from "@/features/topology";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -13,6 +14,7 @@ import {
   Files,
   LoaderCircle,
   MapPinned,
+  OctagonX,
   Pencil,
   RefreshCw,
   Trash2,
@@ -49,6 +51,10 @@ const STATUS_PRESENTATION: Record<UserFileStatus, { label: string; className: st
   failed: {
     label: "ناموفق",
     className: "bg-destructive/10 text-destructive",
+  },
+  cancelled: {
+    label: "لغوشده",
+    className: "bg-amber-500/10 text-amber-600 dark:text-amber-300",
   },
   unavailable: {
     label: "ناموجود",
@@ -244,6 +250,45 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
                   ))}
                 </div>
               )}
+              {file.report &&
+                (file.report.issues ?? []).some(
+                  (issue) => issue.disposition === "ManualReview",
+                ) && (
+                  <div className="mt-4 space-y-2 border-t border-border/60 pt-4">
+                    <p className="text-xs font-bold">موارد نیازمند بررسی دستی</p>
+                    {(file.report.issues ?? []).map((issue, issueIndex) =>
+                      issue.disposition === "ManualReview" ? (
+                        <div
+                          key={`${issue.code}:${issueIndex}`}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-amber-500/5 px-3 py-2"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-xs font-semibold" dir="ltr">
+                              {issue.code}
+                            </span>
+                            <span className="block text-[10px] text-muted-foreground">
+                              عارضه {String(issue.featureId ?? issue.featureIndex)}
+                            </span>
+                          </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={() =>
+                              navigate(
+                                `/map?healedFile=${encodeURIComponent(file.id)}&issue=${issueIndex}`,
+                              )
+                            }
+                          >
+                            <MapPinned />
+                            روی نقشه
+                          </Button>
+                        </div>
+                      ) : null,
+                    )}
+                  </div>
+                )}
             </section>
 
             <section className="rounded-xl border border-border/60 p-4">
@@ -460,6 +505,7 @@ function DeletePopconfirm({
 }
 
 export function FileManagementDashboard() {
+  const navigate = useNavigate();
   const [skip, setSkip] = useState(0);
   const [viewFileId, setViewFileId] = useState<string | null>(null);
   const [editingFile, setEditingFile] = useState<UserFileSummary | null>(null);
@@ -468,6 +514,7 @@ export function FileManagementDashboard() {
     limit: DEFAULT_FILES_LIMIT,
   });
   const [deleteFile] = useDeleteUserFileMutation();
+  const [cancelHealing] = useCancelHealingMutation();
   const page = data?.data;
   const items = page?.items ?? [];
   const total = page?.pagination.total ?? 0;
@@ -601,6 +648,29 @@ export function FileManagementDashboard() {
                         </td>
                         <td className="px-5">
                           <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              size="icon-sm"
+                              variant="outline"
+                              aria-label={`نمایش ${file.name} روی نقشه`}
+                              title={file.isHealed ? "نمایش روی نقشه" : "فایل هنوز ترمیم نشده است"}
+                              disabled={!file.isHealed}
+                              onClick={() =>
+                                navigate(`/map?healedFile=${encodeURIComponent(file.id)}`)
+                              }
+                            >
+                              <MapPinned />
+                            </Button>
+                            {isBusy && (
+                              <Button
+                                size="icon-sm"
+                                variant="outline"
+                                aria-label={`لغو ترمیم ${file.name}`}
+                                title="لغو ترمیم"
+                                onClick={() => void cancelHealing(file.id)}
+                              >
+                                <OctagonX />
+                              </Button>
+                            )}
                             <Button
                               size="icon-sm"
                               variant="outline"

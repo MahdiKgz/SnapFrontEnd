@@ -1,6 +1,6 @@
 import type { TopologyHealStatusData } from "../model/types";
 
-export type HealingSseEventName = "snapshot" | "progress" | "completed" | "failed";
+export type HealingSseEventName = "snapshot" | "progress" | "completed" | "failed" | "cancelled";
 
 export interface HealingSseEvent {
   id: string | null;
@@ -8,7 +8,13 @@ export interface HealingSseEvent {
   data: TopologyHealStatusData;
 }
 
-const EVENT_NAMES = new Set<HealingSseEventName>(["snapshot", "progress", "completed", "failed"]);
+const EVENT_NAMES = new Set<HealingSseEventName>([
+  "snapshot",
+  "progress",
+  "completed",
+  "failed",
+  "cancelled",
+]);
 
 export const parseHealingSseBlock = (block: string): HealingSseEvent | null => {
   const lines = block.split(/\r?\n/);
