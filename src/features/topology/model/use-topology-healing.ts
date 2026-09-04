@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 
 import { streamHealingEvents } from "../api/heal-events";
 import {
   buildTopologyApiUrl,
+  useCancelHealingMutation,
   useHealTopologyMutation,
   useLazyGetHealedOutputQuery,
 } from "../api/topology-api";
+import { receiveHealingEvent, trackHealingJob } from "./healing-sync-slice";
 import type { TopologyHealStatusData, TopologyUploadData } from "./types";
 
 interface UseTopologyHealingOptions {
@@ -20,7 +22,9 @@ interface UseTopologyHealingOptions {
 
 export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHealingOptions) {
   const accessToken = useAppSelector((state) => state.auth.accessToken);
+  const dispatch = useAppDispatch();
   const [healTopology, healRequest] = useHealTopologyMutation();
+  const [cancelHealingRequest, cancelRequest] = useCancelHealingMutation();
   const [loadHealedOutput, outputRequest] = useLazyGetHealedOutputQuery();
   const [isStreaming, setIsStreaming] = useState(false);
   const [lifecycle, setLifecycle] = useState<TopologyHealStatusData | null>(null);
@@ -34,7 +38,7 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
   const applyLifecycle = useCallback(
     async (next: TopologyHealStatusData) => {
       setLifecycle(next);
-      if (next.status === "failed") {
+      if (next.status === "failed" || next.status === "cancelled") {
         setIsStreaming(false);
         return;
       }
@@ -78,8 +82,16 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
           onEvent: (event) => {
             if (event.id) lastEventId.current = event.id;
             setStreamError(false);
-            terminalEventReceived =
-              event.data.status === "completed" || event.data.status === "failed";
+            terminalEventReceived = ["completed", "failed", "cancelled"].includes(
+              event.data.status,
+            );
+            dispatch(
+              receiveHealingEvent({
+                eventId: event.id,
+                jobName: data.name,
+                lifecycle: event.data,
+              }),
+            );
             void applyLifecycle(event.data);
           },
           signal: abortController.signal,
@@ -101,7 +113,7 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
       abortController.abort();
       if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
     };
-  }, [accessToken, applyLifecycle, data.jobId, isStreaming]);
+  }, [accessToken, applyLifecycle, data.jobId, data.name, dispatch, isStreaming]);
 
   const requestHealing = useCallback(async () => {
     setRequestError(false);
@@ -111,6 +123,7 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
     lastEventId.current = null;
     try {
       const response = await healTopology(data.heal.path).unwrap();
+      dispatch(trackHealingJob({ id: data.jobId, name: data.name, status: response.data.status }));
       await applyLifecycle(response.data);
       if (response.data.status === "queued" || response.data.status === "processing") {
         setIsStreaming(true);
@@ -118,13 +131,32 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
     } catch {
       setRequestError(true);
     }
-  }, [applyLifecycle, data.heal.path, healTopology]);
+  }, [applyLifecycle, data.heal.path, data.jobId, data.name, dispatch, healTopology]);
+
+  const cancelHealing = useCallback(async () => {
+    setRequestError(false);
+    try {
+      const response = await cancelHealingRequest(data.jobId).unwrap();
+      await applyLifecycle(response.data);
+      dispatch(
+        receiveHealingEvent({
+          eventId: null,
+          jobName: data.name,
+          lifecycle: response.data,
+        }),
+      );
+    } catch {
+      setRequestError(true);
+    }
+  }, [applyLifecycle, cancelHealingRequest, data.jobId, data.name, dispatch]);
 
   const downloadUrl = lifecycle?.result?.output?.downloadPath
     ? buildTopologyApiUrl(lifecycle.result.output.downloadPath)
     : null;
 
   return {
+    cancelHealing,
+    isCancelling: cancelRequest.isLoading,
     downloadUrl,
     isLoadingOutput: outputRequest.isFetching,
     isOutputReady,

@@ -84,6 +84,10 @@ vi.mock("../api/files-api", () => ({
   useDeleteUserFileMutation: () => [deleteFile],
 }));
 
+vi.mock("@/features/topology", () => ({
+  useCancelHealingMutation: () => [vi.fn(), { isLoading: false }],
+}));
+
 describe("FileManagementDashboard", () => {
   afterEach(cleanup);
 
@@ -128,6 +132,9 @@ describe("FileManagementDashboard", () => {
         <LocationProbe />
       </MemoryRouter>,
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "نمایش Parcel layer روی نقشه" }));
+    expect(screen.getByLabelText("مسیر فعلی").textContent).toBe(`/map?healedFile=${summary.id}`);
 
     fireEvent.click(screen.getByLabelText("مشاهده Parcel layer"));
     fireEvent.click(screen.getByRole("button", { name: "نمایش عوارض ترمیم‌شده روی نقشه" }));

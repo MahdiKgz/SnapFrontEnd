@@ -1,14 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { MapCanvas, useMapLibreMap } from "@/entities/map";
+import { useGetUserFileQuery } from "@/features/files";
 import { useMapPreview } from "@/features/map-preview";
 import {
   TopologyForm,
   type TopologyUploadData,
   useLazyGetHealedOutputQuery,
+  useLazyGetOriginalInputQuery,
   useTopologyResultsMap,
+  useUpdateManualReviewMutation,
 } from "@/features/topology";
-import { AlertTriangle, LoaderCircle, RefreshCw } from "lucide-react";
+import {
+  getIssueCoordinate,
+  useManualReviewMarkers,
+  useOriginalGeometryOverlay,
+} from "@/features/topology/model/use-healed-review-map";
+import { MapReviewPanel } from "@/features/topology/ui/map-review-panel";
+import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
+import { AlertTriangle, Eye, EyeOff, LoaderCircle, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { type MapToolId } from "../model/map-tools";
@@ -34,9 +44,45 @@ export function MapWorkbench() {
   const [isHealedResultVisible, setIsHealedResultVisible] = useState(false);
   const [healedFileLoadError, setHealedFileLoadError] = useState(false);
   const [healedFileLoadAttempt, setHealedFileLoadAttempt] = useState(0);
+  const [originalGeoJson, setOriginalGeoJson] = useState<FeatureCollection<
+    Geometry,
+    GeoJsonProperties
+  > | null>(null);
+  const [isOriginalVisible, setIsOriginalVisible] = useState(false);
+  const [selectedIssueIndex, setSelectedIssueIndex] = useState<number | null>(null);
   const requestedHealedFileId = useRef<string | null>(null);
   const [loadHealedOutput, healedOutputRequest] = useLazyGetHealedOutputQuery();
+  const [loadOriginalInput] = useLazyGetOriginalInputQuery();
+  const [updateManualReview] = useUpdateManualReviewMutation();
   const healedFileId = searchParams.get("healedFile");
+  const requestedIssue = searchParams.get("issue");
+  const fileDetailRequest = useGetUserFileQuery(healedFileId ?? "", {
+    skip: !healedFileId,
+  });
+  const fileDetail = fileDetailRequest.data?.data;
+  const reviewIssues = useMemo(
+    () => fileDetail?.report?.issues ?? [],
+    [fileDetail?.report?.issues],
+  );
+
+  const selectReviewIssue = useCallback((issueIndex: number) => {
+    setSelectedIssueIndex(issueIndex);
+  }, []);
+
+  useOriginalGeometryOverlay({
+    data: originalGeoJson,
+    isMapReady,
+    mapRef,
+    visible: isOriginalVisible,
+  });
+  useManualReviewMarkers({
+    data: originalGeoJson,
+    isMapReady,
+    issues: reviewIssues,
+    mapRef,
+    onSelectIssue: selectReviewIssue,
+    selectedIssueIndex,
+  });
 
   useTopologyResultsMap({
     affectedFeatures: isHealedResultVisible
@@ -57,18 +103,40 @@ export function MapWorkbench() {
 
     requestedHealedFileId.current = healedFileId;
     setHealedFileLoadError(false);
-    void loadHealedOutput(`/heal/${encodeURIComponent(healedFileId)}/output`)
-      .unwrap()
-      .then(async (output) => {
+    setOriginalGeoJson(null);
+    setIsOriginalVisible(false);
+    void Promise.all([
+      loadHealedOutput(`/heal/${encodeURIComponent(healedFileId)}/output`).unwrap(),
+      loadOriginalInput(healedFileId)
+        .unwrap()
+        .catch(() => null),
+    ])
+      .then(async ([output, original]) => {
         setTopologyResult(null);
         setSelectedFeatureIndexes([]);
         setIsHealedResultVisible(true);
+        setOriginalGeoJson(original);
         await previewGeoJson(output);
       })
       .catch(() => {
         setHealedFileLoadError(true);
       });
-  }, [healedFileId, healedFileLoadAttempt, isMapReady, loadHealedOutput, previewGeoJson]);
+  }, [
+    healedFileId,
+    healedFileLoadAttempt,
+    isMapReady,
+    loadHealedOutput,
+    loadOriginalInput,
+    previewGeoJson,
+  ]);
+
+  useEffect(() => {
+    if (!requestedIssue || !/^\d+$/.test(requestedIssue)) {
+      setSelectedIssueIndex(null);
+      return;
+    }
+    setSelectedIssueIndex(Number(requestedIssue));
+  }, [healedFileId, requestedIssue]);
 
   const retryHealedFile = () => {
     requestedHealedFileId.current = null;
@@ -105,6 +173,40 @@ export function MapWorkbench() {
             تلاش دوباره
           </button>
         </div>
+      )}
+
+      {healedFileId && originalGeoJson && !healedFileLoadError && (
+        <button
+          type="button"
+          aria-pressed={isOriginalVisible}
+          className={`absolute top-5 right-5 z-30 flex items-center gap-2 rounded-xl border px-4 py-3 text-xs font-bold shadow-xl backdrop-blur transition-colors ${
+            isOriginalVisible
+              ? "border-amber-400/50 bg-amber-500/90 text-slate-950"
+              : "border-slate-700/70 bg-slate-950/90 text-slate-100"
+          }`}
+          onClick={() => setIsOriginalVisible((visible) => !visible)}
+        >
+          {isOriginalVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          {isOriginalVisible ? "پنهان‌کردن هندسه اصلی" : "نمایش هندسه اصلی"}
+        </button>
+      )}
+
+      {selectedIssueIndex !== null && reviewIssues[selectedIssueIndex] && originalGeoJson && (
+        <MapReviewPanel
+          coordinate={getIssueCoordinate(reviewIssues[selectedIssueIndex], originalGeoJson)}
+          decision={fileDetail?.reviewDecisions?.[String(selectedIssueIndex)]}
+          issue={reviewIssues[selectedIssueIndex]}
+          onAction={async (action) => {
+            if (!healedFileId) return;
+            await updateManualReview({
+              jobId: healedFileId,
+              issueIndex: selectedIssueIndex,
+              action,
+            }).unwrap();
+            await fileDetailRequest.refetch();
+          }}
+          onClose={() => setSelectedIssueIndex(null)}
+        />
       )}
 
       <MapToolPanel

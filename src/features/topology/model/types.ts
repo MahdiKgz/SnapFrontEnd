@@ -2,6 +2,7 @@ import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 
 export interface TopologyIssueLocation {
   geometryCollectionPath: number[];
+  relatedGeometryCollectionPath?: number[];
   coordinatePath: number[] | null;
   relatedCoordinatePath: number[] | null;
   polygonPath: number[] | null;
@@ -13,7 +14,9 @@ export interface TopologyIssue {
   code: string;
   featureIndex: number;
   featureId: string | number | null;
-  geometryType: string;
+  relatedFeatureIndex?: number | null;
+  relatedFeatureId?: string | number | null;
+  geometryType: string | null;
   location: TopologyIssueLocation;
   disposition: string;
   details: Record<string, unknown>;
@@ -97,7 +100,8 @@ export type TopologyHealStatus =
   | "queued"
   | "processing"
   | "completed"
-  | "failed";
+  | "failed"
+  | "cancelled";
 
 export interface TopologyHealOutputLinks {
   fileName: string;
@@ -136,9 +140,18 @@ export interface TopologyHealStatusData {
   result: TopologyHealResult | null;
   links: {
     status: string;
+    original: string;
     output: string;
     download: string;
+    cancel: string;
   };
+}
+
+export type ManualReviewAction = "approved" | "rejected" | "manual-edit";
+
+export interface ManualReviewDecision {
+  action: ManualReviewAction;
+  updatedAt: string;
 }
 
 export interface TopologyHealStatusResponse {
