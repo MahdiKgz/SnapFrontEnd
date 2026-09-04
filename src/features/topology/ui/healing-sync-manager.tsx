@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { useGetUserFilesQuery } from "@/features/files";
+import { filesApi, useGetUserFilesQuery } from "@/features/files/api/files-api";
 import { CheckCircle2, CircleX, Info, X } from "lucide-react";
 
 import { streamHealingEvents } from "../api/heal-events";
@@ -21,11 +21,33 @@ export function HealingSyncManager() {
   const connections = useRef(new Map<string, AbortController>());
 
   useEffect(() => {
-    for (const file of data?.data.items ?? []) {
-      if (file.status === "queued" || file.status === "processing") {
-        dispatch(trackHealingJob({ id: file.id, name: file.name, status: file.status }));
+    if (!data) return;
+    let stopped = false;
+    const trackPage = (page: typeof data.data) => {
+      for (const file of page.items) {
+        if (file.status === "queued" || file.status === "processing") {
+          dispatch(trackHealingJob({ id: file.id, name: file.name, status: file.status }));
+        }
       }
-    }
+    };
+    const discoverAllActiveJobs = async () => {
+      let page = data.data;
+      trackPage(page);
+      while (!stopped && page.pagination.hasMore) {
+        const next = await dispatch(
+          filesApi.endpoints.getUserFiles.initiate(
+            { skip: page.pagination.skip + page.items.length, limit: 50 },
+            { forceRefetch: true, subscribe: false },
+          ),
+        ).unwrap();
+        page = next.data;
+        trackPage(page);
+      }
+    };
+    void discoverAllActiveJobs().catch(() => undefined);
+    return () => {
+      stopped = true;
+    };
   }, [data, dispatch]);
 
   useEffect(() => {
