@@ -152,6 +152,9 @@ export function useTopologyResultsMap({
     showResults();
 
     return () => {
+      // Map removal already disposes its layers and sources.
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- Check live map ownership, not a captured DOM ref.
+      if (mapRef.current !== map) return;
       removeResultsLayers(map);
     };
   }, [affectedFeatures, isMapReady, mapRef]);
@@ -163,6 +166,7 @@ export function useTopologyResultsMap({
     const selectedData = getSelectedFeatureCollection(affectedFeatures, selectedFeatureIndexes);
 
     const applySelection = () => {
+      if (mapRef.current !== map) return false;
       const source = map.getSource(SELECTED_SOURCE_ID) as GeoJSONSource | undefined;
       if (!source) return false;
 

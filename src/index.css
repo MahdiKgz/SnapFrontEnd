@@ -49,6 +49,9 @@
 }
 
 :root {
+  color-scheme: light;
+  --scrollbar-thumb: var(--muted-foreground);
+  --scrollbar-track: var(--background);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -92,6 +95,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   /* مشکی عمیق با هاله سرمه‌ای بسیار ریز */
   --background: oklch(0.13 0.02 250);
   --foreground: oklch(0.98 0.005 250);
@@ -145,13 +149,69 @@
   src: url("/src/assets/fonts/iranyekanwebregularfanum.ttf");
 }
 
+.maplibregl-map .maplibregl-ctrl-group,
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.maplibregl-map .maplibregl-ctrl-group button + button {
+  border-color: var(--border);
+}
+
+.maplibregl-map .maplibregl-ctrl-group button:hover {
+  background-color: var(--accent);
+}
+
+.maplibregl-map .maplibregl-ctrl-attrib a {
+  color: var(--muted-foreground);
+}
+
+.dark .maplibregl-ctrl-icon {
+  filter: invert(1);
+}
+
 @layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 2px solid var(--scrollbar-track);
+    border-radius: 999px;
+    background: var(--scrollbar-thumb);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+
+  *::-webkit-scrollbar-button {
+    display: none;
+  }
+
   :root,
   html,
   body,
   * {
     font-family: IranYekan, sans-serif !important;
     direction: rtl !important;
+  }
+
+  [dir="ltr"] {
+    direction: ltr !important;
+    unicode-bidi: isolate;
   }
 
   body {

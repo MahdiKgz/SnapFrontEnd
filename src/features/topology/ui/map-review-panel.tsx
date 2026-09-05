@@ -38,10 +38,10 @@ export function MapReviewPanel({
     issue.code;
 
   return (
-    <aside className="absolute right-5 bottom-5 z-40 w-[min(25rem,calc(100vw-2.5rem))] rounded-2xl border border-slate-700 bg-slate-950/95 p-4 text-slate-100 shadow-2xl backdrop-blur">
+    <aside className="absolute right-5 bottom-5 z-40 w-[min(25rem,calc(100vw-2.5rem))] rounded-2xl border border-border bg-background/95 p-4 text-foreground shadow-2xl backdrop-blur">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[10px] font-bold text-amber-300">
+          <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-300">
             نیازمند بررسی دستی
           </span>
           <h2 className="mt-3 truncate text-sm font-bold" dir="ltr">
@@ -51,27 +51,29 @@ export function MapReviewPanel({
         <button
           type="button"
           aria-label="بستن جزئیات بررسی"
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+          className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           onClick={onClose}
         >
           <X className="size-4" />
         </button>
       </div>
-      <dl className="mt-4 space-y-2 rounded-xl bg-slate-900/80 p-3 text-xs">
+      <dl className="mt-4 space-y-2 rounded-xl bg-card/80 p-3 text-xs">
         <div>
-          <dt className="text-slate-500">دلیل</dt>
-          <dd className="mt-1 text-slate-200">{reason}</dd>
+          <dt className="text-muted-foreground">دلیل</dt>
+          <dd className="mt-1 text-foreground">{reason}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">مختصات</dt>
-          <dd className="mt-1 font-mono text-slate-200" dir="ltr">
+          <dt className="text-muted-foreground">مختصات</dt>
+          <dd className="mt-1 font-mono text-foreground" dir="ltr">
             {coordinate ? `${coordinate[0]?.toFixed(6)}, ${coordinate[1]?.toFixed(6)}` : "—"}
           </dd>
         </div>
         {decision && (
           <div>
-            <dt className="text-slate-500">تصمیم ثبت‌شده</dt>
-            <dd className="mt-1 font-bold text-emerald-300">{DECISION_LABELS[decision.action]}</dd>
+            <dt className="text-muted-foreground">تصمیم ثبت‌شده</dt>
+            <dd className="mt-1 font-bold text-emerald-700 dark:text-emerald-300">
+              {DECISION_LABELS[decision.action]}
+            </dd>
           </div>
         )}
       </dl>
@@ -87,7 +89,7 @@ export function MapReviewPanel({
             key={action}
             type="button"
             disabled={pendingAction !== null}
-            className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2 text-[11px] font-bold hover:border-slate-500 hover:bg-slate-800 disabled:opacity-60"
+            className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2 text-[11px] font-bold hover:border-input hover:bg-muted disabled:opacity-60"
             onClick={() => void apply(action)}
           >
             {pendingAction === action ? (

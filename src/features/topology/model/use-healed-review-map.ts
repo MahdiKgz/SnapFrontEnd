@@ -100,6 +100,8 @@ export function useOriginalGeometryOverlay({
     });
 
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- Check live map ownership, not a captured DOM ref.
+      if (mapRef.current !== map) return;
       [ORIGINAL_POINT_ID, ORIGINAL_LINE_ID, ORIGINAL_FILL_ID].forEach((id) => {
         if (map.getLayer(id)) map.removeLayer(id);
       });
@@ -109,6 +111,7 @@ export function useOriginalGeometryOverlay({
 }
 
 export function useManualReviewMarkers({
+  interactive = true,
   data,
   isMapReady,
   issues,
@@ -116,6 +119,7 @@ export function useManualReviewMarkers({
   onSelectIssue,
   selectedIssueIndex,
 }: {
+  interactive?: boolean;
   data: FeatureCollection<Geometry, GeoJsonProperties> | null;
   isMapReady: boolean;
   issues: TopologyIssue[];
@@ -160,13 +164,16 @@ export function useManualReviewMarkers({
       },
     });
     const selectMarker = (event: MapLayerMouseEvent) => {
+      if (!interactive) return;
       const issueIndex = Number(event.features?.[0]?.properties?.issueIndex);
       if (Number.isSafeInteger(issueIndex)) onSelectIssue(issueIndex);
     };
     const showPointer = () => {
+      if (!interactive) return;
       map.getCanvas().style.cursor = "pointer";
     };
     const hidePointer = () => {
+      if (!interactive) return;
       map.getCanvas().style.cursor = "";
     };
     map.on("click", REVIEW_LAYER_ID, selectMarker);
@@ -177,10 +184,12 @@ export function useManualReviewMarkers({
       map.off("click", REVIEW_LAYER_ID, selectMarker);
       map.off("mouseenter", REVIEW_LAYER_ID, showPointer);
       map.off("mouseleave", REVIEW_LAYER_ID, hidePointer);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- Check live map ownership, not a captured DOM ref.
+      if (mapRef.current !== map) return;
       if (map.getLayer(REVIEW_LAYER_ID)) map.removeLayer(REVIEW_LAYER_ID);
       if (map.getSource(REVIEW_SOURCE_ID)) map.removeSource(REVIEW_SOURCE_ID);
     };
-  }, [data, isMapReady, issues, mapRef, onSelectIssue, selectedIssueIndex]);
+  }, [data, interactive, isMapReady, issues, mapRef, onSelectIssue, selectedIssueIndex]);
 
   useEffect(() => {
     const map = mapRef.current;

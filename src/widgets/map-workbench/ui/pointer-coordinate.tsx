@@ -63,20 +63,20 @@ export function PointerCoordinate({ isMapReady, mapRef }: PointerCoordinateProps
   return (
     <output
       aria-label="مختصات نشانگر نقشه"
-      className="pointer-events-none absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-xl border border-slate-700/70 bg-slate-950/90 px-2.5 py-2 font-mono text-[10px] text-slate-200 shadow-xl backdrop-blur-md sm:gap-2 sm:px-3 sm:text-[11px]"
+      className="pointer-events-none absolute top-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-xl border border-border/70 bg-background/90 px-2.5 py-2 font-mono text-[10px] text-foreground shadow-xl backdrop-blur-md sm:gap-2 sm:px-3 sm:text-[11px]"
       dir="ltr"
     >
-      <Crosshair className="size-3.5 shrink-0 text-emerald-400" />
+      <Crosshair className="size-3.5 shrink-0 text-emerald-700 dark:text-emerald-400" />
       <span>
-        <span className="text-slate-500">Lng</span> {formatCoordinate(position.longitude)}
+        <span className="text-muted-foreground">Lng</span> {formatCoordinate(position.longitude)}
       </span>
-      <span className="h-3 w-px bg-slate-700" />
+      <span className="h-3 w-px bg-border" />
       <span>
-        <span className="text-slate-500">Lat</span> {formatCoordinate(position.latitude)}
+        <span className="text-muted-foreground">Lat</span> {formatCoordinate(position.latitude)}
       </span>
-      <span className="h-3 w-px bg-slate-700" />
+      <span className="h-3 w-px bg-border" />
       <span>
-        <span className="text-slate-500">Zoom</span> {formatZoom(position.zoom)}
+        <span className="text-muted-foreground">Zoom</span> {formatZoom(position.zoom)}
       </span>
     </output>
   );

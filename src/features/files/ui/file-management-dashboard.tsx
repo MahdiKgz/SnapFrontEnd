@@ -4,6 +4,7 @@ import type { FormEvent, ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCancelHealingMutation } from "@/features/topology";
+import { Popover } from "@base-ui/react/popover";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -427,15 +428,6 @@ function DeletePopconfirm({
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!open) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
-
   const confirm = async () => {
     setIsDeleting(true);
     setError("");
@@ -450,94 +442,109 @@ function DeletePopconfirm({
   };
 
   return (
-    <div className="relative inline-flex">
-      <Button
-        type="button"
-        size="icon-sm"
-        variant="destructive"
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger
         disabled={disabled}
-        aria-label={`حذف ${fileName}`}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        title={disabled ? "حذف هنگام اجرای ترمیم ممکن نیست" : "حذف"}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <Trash2 />
-      </Button>
-      {open && (
-        <div
-          role="dialog"
-          aria-label="تأیید حذف فایل"
-          className="absolute top-[calc(100%+0.5rem)] left-0 z-30 w-72 rounded-xl border border-border bg-popover p-4 text-right shadow-xl"
+        render={
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="destructive"
+            disabled={disabled}
+            aria-label={`حذف ${fileName}`}
+            title={disabled ? "حذف هنگام اجرای ترمیم ممکن نیست" : "حذف"}
+          >
+            <Trash2 />
+          </Button>
+        }
+      />
+      <Popover.Portal>
+        <Popover.Positioner
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          collisionPadding={12}
+          positionMethod="fixed"
+          className="z-50 data-[anchor-hidden]:hidden"
         >
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-            <div>
-              <p className="text-sm font-bold text-popover-foreground">این فایل حذف شود؟</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                فایل «{fileName}»، گزارش تحلیل و خروجی ترمیم‌شده آن برای همیشه حذف می‌شوند.
-              </p>
+          <Popover.Popup
+            role="dialog"
+            aria-label="تأیید حذف فایل"
+            className="w-72 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-popover p-4 text-right shadow-xl"
+          >
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+              <div>
+                <p className="text-sm font-bold text-popover-foreground">این فایل حذف شود؟</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  فایل «{fileName}»، گزارش تحلیل و خروجی ترمیم‌شده آن برای همیشه حذف می‌شوند.
+                </p>
+              </div>
             </div>
-          </div>
-          {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
-          <div className="mt-4 flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isDeleting}
-            >
-              انصراف
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => void confirm()}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "در حال حذف..." : "بله، حذف شود"}
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+            {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={isDeleting}
+              >
+                انصراف
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => void confirm()}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "در حال حذف..." : "بله، حذف شود"}
+              </Button>
+            </div>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
 export function FileManagementDashboard() {
   const navigate = useNavigate();
   const [skip, setSkip] = useState(0);
+  const [limit, setLimit] = useState(DEFAULT_FILES_LIMIT);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
   const [viewFileId, setViewFileId] = useState<string | null>(null);
   const [editingFile, setEditingFile] = useState<UserFileSummary | null>(null);
-  const { data, isError, isFetching, refetch } = useGetUserFilesQuery({
+  const { currentData, data, isError, isFetching, refetch } = useGetUserFilesQuery({
     skip,
-    limit: DEFAULT_FILES_LIMIT,
+    limit,
   });
   const [deleteFile] = useDeleteUserFileMutation();
   const [cancelHealing] = useCancelHealingMutation();
-  const page = data?.data;
+  const page = currentData?.data;
   const items = page?.items ?? [];
-  const total = page?.pagination.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / DEFAULT_FILES_LIMIT));
-  const currentPage = Math.floor(skip / DEFAULT_FILES_LIMIT) + 1;
+  const total = data?.data.pagination.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const currentPage = Math.floor(skip / limit) + 1;
+
+  if (!isFetching && page && page.pagination.skip === skip && page.items.length === 0 && skip > 0) {
+    setSkip(Math.max(0, (Math.ceil(page.pagination.total / limit) - 1) * limit));
+  }
 
   useEffect(() => {
-    if (page && page.items.length === 0 && skip > 0) {
-      setSkip(Math.max(0, skip - DEFAULT_FILES_LIMIT));
-    }
-  }, [page, skip]);
+    if (tableScrollRef.current) tableScrollRef.current.scrollTop = 0;
+  }, [skip, limit]);
 
   const handleDelete = async (id: string) => {
     await deleteFile(id).unwrap();
     if (items.length === 1 && skip > 0) {
-      setSkip(Math.max(0, skip - DEFAULT_FILES_LIMIT));
+      setSkip(Math.max(0, skip - limit));
     }
   };
 
   return (
-    <div className="h-full overflow-y-auto p-5 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="h-full min-h-0 overflow-hidden p-4 md:p-8">
+      <div className="mx-auto flex h-full min-h-0 max-w-7xl flex-col gap-4 md:gap-6">
+        <header className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-foreground">فایل‌های من</h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -550,7 +557,7 @@ export function FileManagementDashboard() {
           </Link>
         </header>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid shrink-0 grid-cols-3 gap-2 md:gap-4">
           <SummaryCard
             icon={<Files />}
             label="تعداد فایل‌ها"
@@ -570,8 +577,8 @@ export function FileManagementDashboard() {
           />
         </div>
 
-        <section className="rounded-2xl border border-border/60 bg-card shadow-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-3 md:px-5 md:py-4">
             <div>
               <h2 className="text-base font-bold">فهرست فایل‌های بارگذاری‌شده</h2>
               <p className="mt-1 text-xs text-muted-foreground">مرتب‌شده از جدیدترین بارگذاری</p>
@@ -587,31 +594,38 @@ export function FileManagementDashboard() {
             </Button>
           </div>
 
-          {isError ? (
-            <div className="p-10 text-center">
-              <AlertTriangle className="mx-auto size-8 text-destructive" />
-              <p className="mt-3 text-sm text-destructive">دریافت فهرست فایل‌ها ممکن نشد.</p>
-              <Button className="mt-4" variant="outline" onClick={() => void refetch()}>
-                تلاش دوباره
-              </Button>
-            </div>
-          ) : isFetching && !page ? (
-            <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
-              <LoaderCircle className="size-5 animate-spin" />
-              در حال دریافت فایل‌ها...
-            </div>
-          ) : items.length === 0 ? (
-            <div className="p-12 text-center">
-              <Files className="mx-auto size-10 text-muted-foreground/50" />
-              <h3 className="mt-4 text-sm font-bold">هنوز فایلی ندارید</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                اولین فایل مکانی خود را از میز کار نقشه بارگذاری کنید.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+          <div
+            ref={tableScrollRef}
+            role="region"
+            aria-label="جدول فایل‌ها"
+            aria-busy={isFetching}
+            tabIndex={0}
+            className="min-h-0 flex-1 overflow-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          >
+            {isError ? (
+              <div className="p-10 text-center">
+                <AlertTriangle className="mx-auto size-8 text-destructive" />
+                <p className="mt-3 text-sm text-destructive">دریافت فهرست فایل‌ها ممکن نشد.</p>
+                <Button className="mt-4" variant="outline" onClick={() => void refetch()}>
+                  تلاش دوباره
+                </Button>
+              </div>
+            ) : isFetching && !page ? (
+              <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <LoaderCircle className="size-5 animate-spin" />
+                در حال دریافت فایل‌ها...
+              </div>
+            ) : items.length === 0 ? (
+              <div className="p-12 text-center">
+                <Files className="mx-auto size-10 text-muted-foreground/50" />
+                <h3 className="mt-4 text-sm font-bold">هنوز فایلی ندارید</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  اولین فایل مکانی خود را از میز کار نقشه بارگذاری کنید.
+                </p>
+              </div>
+            ) : (
               <table className="w-full min-w-[780px] border-collapse text-right">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-card">
                   <tr className="h-12 border-b border-border/60 bg-muted/20 text-xs text-muted-foreground">
                     <th className="px-5 font-semibold">نام</th>
                     <th className="px-4 font-semibold">زمان بارگذاری</th>
@@ -701,20 +715,38 @@ export function FileManagementDashboard() {
                   })}
                 </tbody>
               </table>
-            </div>
-          )}
+            )}
+          </div>
 
-          <footer className="flex flex-col gap-3 border-t border-border/60 px-5 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground md:px-5 md:py-4">
             <span>
               نمایش {items.length.toLocaleString("fa-IR")} از {total.toLocaleString("fa-IR")} فایل
             </span>
+            <label className="flex items-center gap-2">
+              تعداد در صفحه
+              <select
+                value={limit}
+                disabled={isFetching}
+                onChange={(event) => {
+                  setLimit(Number(event.target.value));
+                  setSkip(0);
+                }}
+                className="h-8 rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              >
+                {[10, 20, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size.toLocaleString("fa-IR")}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="flex items-center gap-2">
               <Button
                 size="icon-sm"
                 variant="outline"
                 aria-label="صفحه قبل"
                 disabled={skip === 0 || isFetching}
-                onClick={() => setSkip(Math.max(0, skip - DEFAULT_FILES_LIMIT))}
+                onClick={() => setSkip(Math.max(0, skip - limit))}
               >
                 <ChevronRight />
               </Button>
@@ -726,7 +758,7 @@ export function FileManagementDashboard() {
                 variant="outline"
                 aria-label="صفحه بعد"
                 disabled={!page?.pagination.hasMore || isFetching}
-                onClick={() => setSkip(skip + DEFAULT_FILES_LIMIT)}
+                onClick={() => setSkip(skip + limit)}
               >
                 <ChevronLeft />
               </Button>
@@ -743,8 +775,8 @@ export function FileManagementDashboard() {
 
 function SummaryCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
-      <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:size-5">
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border/60 bg-card p-3 shadow-sm md:gap-4 md:p-4">
+      <span className="hidden size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary md:flex [&_svg]:size-5">
         {icon}
       </span>
       <span>

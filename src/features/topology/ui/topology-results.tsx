@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Tooltip } from "@/components/ui/tooltip";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import {
   AlertCircle,
@@ -69,6 +70,7 @@ export function TopologyResults({
     lifecycle?.status === "queued" ||
     lifecycle?.status === "processing";
   const isCompleted = lifecycle?.status === "completed";
+  const isHealingDisabled = isHealing || isCompleted || hasOnlyManualReviewIssues;
 
   const selectIssueGroup = (group: TopologyIssueGroup) => {
     setSelectedGroupId(group.groupId);
@@ -77,73 +79,78 @@ export function TopologyResults({
 
   return (
     <section aria-labelledby="topology-results-title">
-      <header className="mb-4 border-b border-slate-800 pb-4">
+      <header className="mb-4 border-b border-border pb-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="mb-1 text-[10px] font-bold tracking-[0.18em] text-red-400">
+            <p className="mb-1 text-[10px] font-bold tracking-[0.18em] text-red-700 dark:text-red-400">
               DRY RUN COMPLETE
             </p>
-            <h1 id="topology-results-title" className="text-base font-bold text-slate-100">
+            <h1 id="topology-results-title" className="text-base font-bold text-foreground">
               نتایج بررسی
             </h1>
-            <p className="mt-1 truncate text-[10px] text-slate-500" dir="ltr" title={data.jobId}>
+            <p
+              className="mt-1 truncate text-[10px] text-muted-foreground"
+              dir="ltr"
+              title={data.jobId}
+            >
               Job ID: {data.jobId}
             </p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              aria-label="بررسی فایل جدید"
-              onClick={onReset}
-              className="group relative flex size-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
-            >
-              <FilePlus2 className="size-5" />
-              <span
-                role="tooltip"
-                className="pointer-events-none absolute top-[calc(100%+0.5rem)] left-1/2 z-30 w-max -translate-x-1/2 -translate-y-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[10px] font-medium whitespace-nowrap text-slate-100 opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+            <Tooltip content="بررسی فایل جدید">
+              <button
+                type="button"
+                aria-label="بررسی فایل جدید"
+                onClick={onReset}
+                className="flex size-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-input hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                بررسی فایل جدید
-              </span>
-            </button>
+                <FilePlus2 className="size-5" />
+              </button>
+            </Tooltip>
 
-            <button
-              type="button"
-              aria-label="ترمیم خودکار"
-              onClick={() => void requestHealing()}
-              disabled={isHealing || isCompleted || hasOnlyManualReviewIssues}
-              className="group relative flex size-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-[0_8px_22px_-10px_rgba(16,185,129,0.9)] transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-wait disabled:opacity-70"
+            <Tooltip
+              content={
+                hasOnlyManualReviewIssues ? "هیچ ترمیم خودکاری در دسترس نیست" : "ترمیم خودکار"
+              }
             >
-              {isHealing ? (
-                <LoaderCircle className="size-5 animate-spin" />
-              ) : (
-                <WandSparkles className="size-5" />
-              )}
               <span
-                role="tooltip"
-                className="pointer-events-none absolute top-[calc(100%+0.5rem)] left-1/2 z-30 w-max -translate-x-1/2 -translate-y-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[10px] font-medium whitespace-nowrap text-slate-100 opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+                className="inline-flex rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                tabIndex={isHealingDisabled ? 0 : -1}
               >
-                {hasOnlyManualReviewIssues ? "هیچ ترمیم خودکاری در دسترس نیست" : "ترمیم خودکار"}
+                <button
+                  type="button"
+                  aria-label="ترمیم خودکار"
+                  onClick={() => void requestHealing()}
+                  disabled={isHealingDisabled}
+                  className="flex size-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-[0_8px_22px_-10px_rgba(16,185,129,0.9)] transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:pointer-events-none disabled:opacity-70"
+                >
+                  {isHealing ? (
+                    <LoaderCircle className="size-5 animate-spin" />
+                  ) : (
+                    <WandSparkles className="size-5" />
+                  )}
+                </button>
               </span>
-            </button>
+            </Tooltip>
           </div>
         </div>
       </header>
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+      <div className="rounded-xl border border-border bg-card/70 p-3">
         <div className="flex items-center gap-2">
-          <FileSearch className="size-4 text-slate-400" />
+          <FileSearch className="size-4 text-muted-foreground" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold text-slate-200">{data.name}</p>
-            <p className="mt-0.5 truncate text-[10px] text-slate-500" dir="ltr">
+            <p className="truncate text-xs font-semibold text-foreground">{data.name}</p>
+            <p className="mt-0.5 truncate text-[10px] text-muted-foreground" dir="ltr">
               {data.originalName}
             </p>
           </div>
           <span
             className={`rounded-full px-2 py-1 text-[9px] font-bold ${
               data.report.valid
-                ? "bg-emerald-500/12 text-emerald-300"
-                : "bg-red-500/12 text-red-300"
+                ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
+                : "bg-red-500/12 text-red-700 dark:text-red-300"
             }`}
           >
             {data.report.valid ? "معتبر" : "نیازمند بررسی"}
@@ -151,27 +158,27 @@ export function TopologyResults({
         </div>
 
         <dl className="mt-3 grid grid-cols-2 gap-2 text-center">
-          <div className="rounded-lg bg-slate-950/70 px-2 py-2">
-            <dt className="text-[9px] text-slate-500">عارضه</dt>
-            <dd className="mt-1 text-sm font-bold text-slate-100">
+          <div className="rounded-lg bg-background/70 px-2 py-2">
+            <dt className="text-[9px] text-muted-foreground">عارضه</dt>
+            <dd className="mt-1 text-sm font-bold text-foreground">
               {summary.featuresScanned.toLocaleString("fa-IR")}
             </dd>
           </div>
-          <div className="rounded-lg bg-slate-950/70 px-2 py-2">
-            <dt className="text-[9px] text-slate-500">خطا</dt>
-            <dd className="mt-1 text-sm font-bold text-red-400">
+          <div className="rounded-lg bg-background/70 px-2 py-2">
+            <dt className="text-[9px] text-muted-foreground">خطا</dt>
+            <dd className="mt-1 text-sm font-bold text-red-700 dark:text-red-400">
               {summary.issuesFound.toLocaleString("fa-IR")}
             </dd>
           </div>
-          <div className="rounded-lg bg-slate-950/70 px-2 py-2">
-            <dt className="text-[9px] text-slate-500">گروه خطا</dt>
-            <dd className="mt-1 text-sm font-bold text-amber-400">
+          <div className="rounded-lg bg-background/70 px-2 py-2">
+            <dt className="text-[9px] text-muted-foreground">گروه خطا</dt>
+            <dd className="mt-1 text-sm font-bold text-amber-700 dark:text-amber-400">
               {summary.issueGroups.toLocaleString("fa-IR")}
             </dd>
           </div>
-          <div className="rounded-lg bg-slate-950/70 px-2 py-2">
-            <dt className="text-[9px] text-slate-500">تلورانس</dt>
-            <dd className="mt-1 text-sm font-bold text-slate-100" dir="ltr">
+          <div className="rounded-lg bg-background/70 px-2 py-2">
+            <dt className="text-[9px] text-muted-foreground">تلورانس</dt>
+            <dd className="mt-1 text-sm font-bold text-foreground" dir="ltr">
               {data.appliedTolerance} mm
             </dd>
           </div>
@@ -181,7 +188,7 @@ export function TopologyResults({
       {hasOnlyManualReviewIssues && (
         <div
           role="status"
-          className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-[11px] leading-5 text-amber-300"
+          className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-[11px] leading-5 text-amber-700 dark:text-amber-300"
         >
           <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
           <span>
@@ -193,7 +200,7 @@ export function TopologyResults({
       {isHealing && (
         <div
           role="status"
-          className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 px-3 py-2.5 text-[11px] leading-5 text-sky-300"
+          className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 px-3 py-2.5 text-[11px] leading-5 text-sky-700 dark:text-sky-300"
         >
           <div className="flex items-center gap-2">
             <LoaderCircle className="size-3.5 shrink-0 animate-spin" />
@@ -208,7 +215,7 @@ export function TopologyResults({
               {Math.round(lifecycle?.progress ?? 0)}%
             </span>
           </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-sky-950/70">
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-sky-100 dark:bg-sky-950/70">
             <div
               className="h-full rounded-full bg-sky-400 transition-[width] duration-300"
               style={{ width: `${Math.max(2, lifecycle?.progress ?? 0)}%` }}
@@ -217,18 +224,23 @@ export function TopologyResults({
           {lifecycle?.progressDetail && (
             <dl className="mt-2 grid grid-cols-4 gap-1.5">
               {Object.entries(lifecycle.progressDetail.issueCounts).map(([key, count]) => (
-                <div key={key} className="rounded-md bg-sky-950/45 px-1.5 py-1 text-center">
-                  <dt className="truncate text-[8px] text-sky-300/70">
+                <div
+                  key={key}
+                  className="rounded-md bg-sky-100/70 dark:bg-sky-950/45 px-1.5 py-1 text-center"
+                >
+                  <dt className="truncate text-[8px] text-sky-700/70 dark:text-sky-300/70">
                     {ISSUE_COUNT_LABELS[key as keyof typeof ISSUE_COUNT_LABELS]}
                   </dt>
-                  <dd className="mt-0.5 font-bold text-sky-200">{count.toLocaleString("fa-IR")}</dd>
+                  <dd className="mt-0.5 font-bold text-sky-700 dark:text-sky-200">
+                    {count.toLocaleString("fa-IR")}
+                  </dd>
                 </div>
               ))}
             </dl>
           )}
           <button
             type="button"
-            className="mt-3 flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 font-bold text-red-300 transition-colors hover:bg-red-500/20 disabled:opacity-60"
+            className="mt-3 flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 font-bold text-red-700 dark:text-red-300 transition-colors hover:bg-red-500/20 disabled:opacity-60"
             disabled={isCancelling}
             onClick={() => void cancelHealing()}
           >
@@ -245,7 +257,7 @@ export function TopologyResults({
       {lifecycle?.status === "cancelled" && (
         <div
           role="status"
-          className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-[11px] text-amber-300"
+          className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-[11px] text-amber-700 dark:text-amber-300"
         >
           عملیات ترمیم لغو شد. می‌توانید دوباره آن را آغاز کنید.
         </div>
@@ -254,7 +266,7 @@ export function TopologyResults({
       {isCompleted && (
         <div
           role="status"
-          className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-[11px] leading-5 text-emerald-300"
+          className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-[11px] leading-5 text-emerald-700 dark:text-emerald-300"
         >
           <div className="flex items-start gap-2">
             {isLoadingOutput ? (
@@ -264,7 +276,7 @@ export function TopologyResults({
             )}
             <div>
               <p className="font-bold">ترمیم فایل با موفقیت کامل شد.</p>
-              <p className="text-emerald-300/80">
+              <p className="text-emerald-700/80 dark:text-emerald-300/80">
                 {isOutputReady
                   ? "نتیجه ترمیم‌شده روی نقشه نمایش داده شد."
                   : outputError
@@ -272,7 +284,7 @@ export function TopologyResults({
                     : "در حال بارگذاری نتیجه ترمیم‌شده روی نقشه..."}
               </p>
               {lifecycle.result && (
-                <p className="mt-1 text-emerald-200">
+                <p className="mt-1 text-emerald-700 dark:text-emerald-200">
                   {lifecycle.result.repairsApplied.toLocaleString("fa-IR")} عملیات اصلاح ثبت شد.
                 </p>
               )}
@@ -294,7 +306,7 @@ export function TopologyResults({
       {(requestError || statusError || outputError || lifecycle?.status === "failed") && (
         <div
           role="alert"
-          className="mt-3 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-[11px] leading-5 text-red-300"
+          className="mt-3 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-[11px] leading-5 text-red-700 dark:text-red-300"
         >
           <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
           {lifecycle?.error ||
@@ -306,12 +318,12 @@ export function TopologyResults({
 
       <div className="mt-5 flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-xs font-bold text-slate-200">گروه‌های خطا</h2>
-          <p className="mt-1 text-[10px] text-slate-500">
+          <h2 className="text-xs font-bold text-foreground">گروه‌های خطا</h2>
+          <p className="mt-1 text-[10px] text-muted-foreground">
             برای نمایش عارضه‌های هر گروه روی نقشه، کارت را انتخاب کنید.
           </p>
         </div>
-        <span className="rounded-full bg-red-500/12 px-2 py-1 text-[10px] font-bold text-red-300">
+        <span className="rounded-full bg-red-500/12 px-2 py-1 text-[10px] font-bold text-red-700 dark:text-red-300">
           {summary.issueGroups.toLocaleString("fa-IR")}
         </span>
       </div>

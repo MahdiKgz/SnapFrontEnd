@@ -116,7 +116,7 @@ export function HealingSyncManager() {
   });
 
   return (
-    <div className="pointer-events-none fixed top-5 left-5 z-[80] flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-2">
+    <div className="pointer-events-none fixed top-5 inset-x-0 z-80 flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-2">
       {notifications.map((notification) => (
         <div
           key={notification.id}

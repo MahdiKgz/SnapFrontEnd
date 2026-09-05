@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { MapCanvas, useMapLibreMap } from "@/entities/map";
+import { FeatureInspectionPanel } from "@/features/feature-inspection/ui/feature-inspection-panel";
 import { useGetUserFileQuery } from "@/features/files";
+import { MapMeasurementTools } from "@/features/map-measurement/ui/map-measurement-tools";
 import { useMapPreview } from "@/features/map-preview";
 import {
   TopologyForm,
@@ -9,14 +11,11 @@ import {
   useLazyGetHealedOutputQuery,
   useLazyGetOriginalInputQuery,
   useTopologyResultsMap,
-  useUpdateManualReviewMutation,
 } from "@/features/topology";
 import {
-  getIssueCoordinate,
   useManualReviewMarkers,
   useOriginalGeometryOverlay,
 } from "@/features/topology/model/use-healed-review-map";
-import { MapReviewPanel } from "@/features/topology/ui/map-review-panel";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import { AlertTriangle, Eye, EyeOff, LoaderCircle, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -39,6 +38,7 @@ export function MapWorkbench() {
   } = useMapPreview(mapRef, isMapReady);
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isMeasuring, setIsMeasuring] = useState(false);
   const [topologyResult, setTopologyResult] = useState<TopologyUploadData | null>(null);
   const [selectedFeatureIndexes, setSelectedFeatureIndexes] = useState<number[]>([]);
   const [isHealedResultVisible, setIsHealedResultVisible] = useState(false);
@@ -53,7 +53,6 @@ export function MapWorkbench() {
   const requestedHealedFileId = useRef<string | null>(null);
   const [loadHealedOutput, healedOutputRequest] = useLazyGetHealedOutputQuery();
   const [loadOriginalInput] = useLazyGetOriginalInputQuery();
-  const [updateManualReview] = useUpdateManualReviewMutation();
   const healedFileId = searchParams.get("healedFile");
   const requestedIssue = searchParams.get("issue");
   const fileDetailRequest = useGetUserFileQuery(healedFileId ?? "", {
@@ -76,6 +75,7 @@ export function MapWorkbench() {
     visible: isOriginalVisible,
   });
   useManualReviewMarkers({
+    interactive: !isMeasuring,
     data: originalGeoJson,
     isMapReady,
     issues: reviewIssues,
@@ -149,25 +149,34 @@ export function MapWorkbench() {
   };
 
   return (
-    <div className="relative h-dvh min-h-[32rem] w-full overflow-hidden bg-slate-100" dir="rtl">
+    <div className="relative h-dvh min-h-[32rem] w-full overflow-hidden bg-background" dir="rtl">
       <MapCanvas containerRef={containerRef} />
       <PointerCoordinate isMapReady={isMapReady} mapRef={mapRef} />
+      <MapMeasurementTools
+        mapRef={mapRef}
+        isMapReady={isMapReady}
+        onActiveChange={setIsMeasuring}
+      />
+
+      {!isMeasuring && !isPanelOpen && (
+        <FeatureInspectionPanel mapRef={mapRef} isMapReady={isMapReady} />
+      )}
 
       {healedFileId && healedOutputRequest.isFetching && (
-        <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-slate-700/70 bg-slate-950/90 px-4 py-3 text-xs text-slate-100 shadow-xl backdrop-blur">
-          <LoaderCircle className="size-4 animate-spin text-emerald-400" />
+        <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border/70 bg-background/90 px-4 py-3 text-xs text-foreground shadow-xl backdrop-blur">
+          <LoaderCircle className="size-4 animate-spin text-emerald-700 dark:text-emerald-400" />
           در حال نمایش عوارض ترمیم‌شده...
         </div>
       )}
 
       {healedFileId && healedFileLoadError && !healedOutputRequest.isFetching && (
-        <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-red-500/30 bg-slate-950/95 px-4 py-3 text-xs text-slate-100 shadow-xl backdrop-blur">
-          <AlertTriangle className="size-4 shrink-0 text-red-400" />
+        <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-red-500/30 bg-background/95 px-4 py-3 text-xs text-foreground shadow-xl backdrop-blur">
+          <AlertTriangle className="size-4 shrink-0 text-red-700 dark:text-red-400" />
           <span>نمایش خروجی ترمیم‌شده ممکن نشد.</span>
           <button
             type="button"
             onClick={retryHealedFile}
-            className="flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1.5 font-semibold transition-colors hover:bg-slate-700"
+            className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 font-semibold transition-colors hover:bg-border"
           >
             <RefreshCw className="size-3.5" />
             تلاش دوباره
@@ -182,31 +191,13 @@ export function MapWorkbench() {
           className={`absolute top-5 right-5 z-30 flex items-center gap-2 rounded-xl border px-4 py-3 text-xs font-bold shadow-xl backdrop-blur transition-colors ${
             isOriginalVisible
               ? "border-amber-400/50 bg-amber-500/90 text-slate-950"
-              : "border-slate-700/70 bg-slate-950/90 text-slate-100"
+              : "border-border/70 bg-background/90 text-foreground"
           }`}
           onClick={() => setIsOriginalVisible((visible) => !visible)}
         >
           {isOriginalVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           {isOriginalVisible ? "پنهان‌کردن هندسه اصلی" : "نمایش هندسه اصلی"}
         </button>
-      )}
-
-      {selectedIssueIndex !== null && reviewIssues[selectedIssueIndex] && originalGeoJson && (
-        <MapReviewPanel
-          coordinate={getIssueCoordinate(reviewIssues[selectedIssueIndex], originalGeoJson)}
-          decision={fileDetail?.reviewDecisions?.[String(selectedIssueIndex)]}
-          issue={reviewIssues[selectedIssueIndex]}
-          onAction={async (action) => {
-            if (!healedFileId) return;
-            await updateManualReview({
-              jobId: healedFileId,
-              issueIndex: selectedIssueIndex,
-              action,
-            }).unwrap();
-            await fileDetailRequest.refetch();
-          }}
-          onClose={() => setSelectedIssueIndex(null)}
-        />
       )}
 
       <MapToolPanel

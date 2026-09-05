@@ -54,8 +54,9 @@ export function useMapLibreMap() {
 
     return () => {
       map.off("load", markMapReady);
-      map.remove();
+      // Invalidate the shared instance before removal fires events or other effects clean up.
       mapRef.current = null;
+      map.remove();
     };
   }, []);
 

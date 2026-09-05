@@ -171,7 +171,7 @@ describe("TopologyResults", () => {
     );
   });
 
-  it("places the new-file action beside auto-repair and resets from the header", () => {
+  it("places the new-file action beside auto-repair and resets from the header", async () => {
     const onReset = vi.fn();
     const onSelectFeatures = vi.fn();
 
@@ -187,8 +187,11 @@ describe("TopologyResults", () => {
     const newFileButton = screen.getByRole("button", { name: "بررسی فایل جدید" });
     const autoRepairButton = screen.getByRole("button", { name: "ترمیم خودکار" });
 
-    expect(newFileButton.parentElement).toBe(autoRepairButton.parentElement);
-    expect(screen.getByRole("tooltip", { name: "بررسی فایل جدید" })).toBeTruthy();
+    expect(newFileButton.parentElement).toBe(autoRepairButton.parentElement?.parentElement);
+    fireEvent.focus(newFileButton);
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip.textContent).toBe("بررسی فایل جدید");
+    expect(newFileButton.closest("section")?.contains(tooltip)).toBe(false);
 
     fireEvent.click(newFileButton);
     expect(onReset).toHaveBeenCalledOnce();

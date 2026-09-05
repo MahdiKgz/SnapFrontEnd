@@ -52,13 +52,17 @@ vi.mock("@/features/topology", () => ({
 }));
 
 vi.mock("@/features/files", () => ({
-  useGetUserFileQuery: () => ({ data: undefined, refetch: vi.fn() }),
+  useGetUserFileQuery: () => ({ data: { data: { report: { issues: [{}] } } }, refetch: vi.fn() }),
 }));
 
 vi.mock("@/features/topology/model/use-healed-review-map", () => ({
   getIssueCoordinate: vi.fn(),
   useManualReviewMarkers: vi.fn(),
   useOriginalGeometryOverlay: vi.fn(),
+}));
+
+vi.mock("@/features/topology/ui/map-review-panel", () => ({
+  MapReviewPanel: () => <div data-testid="review-panel" />,
 }));
 
 describe("MapWorkbench saved healed output", () => {
@@ -74,7 +78,7 @@ describe("MapWorkbench saved healed output", () => {
   it("loads and displays the healed file selected from the dashboard modal", async () => {
     const fileId = "19c53c73-b994-4723-abf1-ab2f87e05679";
     render(
-      <MemoryRouter initialEntries={[`/map?healedFile=${fileId}`]}>
+      <MemoryRouter initialEntries={[`/map?healedFile=${fileId}&issue=0`]}>
         <MapWorkbench />
       </MemoryRouter>,
     );
@@ -83,5 +87,6 @@ describe("MapWorkbench saved healed output", () => {
     expect(loadOriginalInput).toHaveBeenCalledWith(fileId);
     await waitFor(() => expect(previewGeoJson).toHaveBeenCalledWith(healedOutput));
     expect(screen.getByRole("button", { name: "نمایش هندسه اصلی" })).toBeTruthy();
+    expect(screen.queryByTestId("review-panel")).toBeNull();
   });
 });

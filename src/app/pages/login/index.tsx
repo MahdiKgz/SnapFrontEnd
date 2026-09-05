@@ -8,6 +8,7 @@ import { useLoginMutation } from "@/features/auth/api/auth-api";
 import { getAuthErrorMessage } from "@/features/auth/lib/get-auth-error-message";
 import { getPostAuthRedirect } from "@/features/auth/lib/post-auth-redirect";
 import { setCredentials } from "@/features/auth/model/auth-slice";
+import { ThemeToggle } from "@/features/theme/ui/theme-toggle";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock, ShieldCheck, Smartphone } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -60,7 +61,7 @@ function LoginPage() {
   return (
     <div className="w-full min-h-screen flex items-stretch">
       {/* سمت راست: فرم ورود */}
-      <div className="w-full lg:w-[30%] flex flex-col justify-center px-6 sm:px-16 lg:px-20 py-12 bg-background relative z-10">
+      <div className="w-full lg:w-[30%] flex flex-col justify-center px-6 sm:px-16 lg:px-10 xl:px-16 2xl:px-20 py-12 bg-background relative z-10">
         {/* لوگو و نام پلتفرم */}
         <div className="mb-10 flex items-center gap-2 font-sans font-bold text-xl tracking-wider text-foreground">
           <span className="h-7 w-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground text-sm shadow-[0_0_15px_rgba(114,180,145,0.4)]">
@@ -69,6 +70,7 @@ function LoginPage() {
           <span>
             Snap<span className="text-primary">GIS</span>
           </span>
+          <ThemeToggle className="mr-auto" />
         </div>
 
         {/* تیتر ورود */}
@@ -182,17 +184,17 @@ function LoginPage() {
       </div>
 
       {/* سمت چپ: آرت‌ورک هندسی بیزینسی (مخصوص دسکتاپ) */}
-      <div className="hidden lg:flex flex-1 relative bg-neutral-950 items-center justify-center p-12 overflow-hidden border-r border-border/40">
+      <div className="hidden lg:flex flex-1 relative bg-muted/40 dark:bg-card items-center justify-center p-12 overflow-hidden border-r border-border/40">
         {/* گرید لاین‌ها و نورهای پس‌زمینه */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-20" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[100px]" />
 
         <div className="relative z-10 max-w-md text-right flex flex-col gap-4">
           <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 self-start text-primary">
             <ShieldCheck className="h-6 w-6" />
           </div>
-          <h3 className="text-2xl font-bold text-neutral-100">امنیت و سرعت در پردازش لایه‌ها</h3>
-          <p className="text-sm text-neutral-400 leading-relaxed font-light">
+          <h3 className="text-2xl font-bold text-foreground">امنیت و سرعت در پردازش لایه‌ها</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed font-light">
             دسترسی به قدرتمندترین الگوریتم‌های هندسی و موتورهای توپولوژیکی در بستر زیرساخت ابری
             اختصاصی و امن پروژه‌های شما.
           </p>

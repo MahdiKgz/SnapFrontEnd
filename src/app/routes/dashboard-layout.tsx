@@ -1,7 +1,8 @@
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { useLogoutMutation } from "@/features/auth/api/auth-api";
 import { logout } from "@/features/auth/model/auth-slice";
-import { Layers, LayoutDashboard, LogOut, Map, Settings, ShieldAlert, User } from "lucide-react";
+import { ThemeToggle } from "@/features/theme/ui/theme-toggle";
+import { Layers, LayoutDashboard, LogOut, Map, User } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 const NAVIGATION_ITEMS = [
@@ -70,6 +71,7 @@ export function DashboardLayout() {
 
         {/* بخش پایینی سایدبار: اطلاعات کاربر و خروج */}
         <div className="p-4 border-t border-sidebar-border bg-sidebar-accent/30 flex flex-col gap-2">
+          <ThemeToggle showLabel />
           <div className="flex items-center gap-3 px-4 py-2 text-sidebar-foreground">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary/10 text-sidebar-primary">
               <User className="h-4 w-4" />

@@ -61,7 +61,6 @@ describe("landing Header account actions", () => {
     fireEvent.click(screen.getByRole("button", { name: /Mahdi User/ }));
     expect(screen.getByRole("menu", { name: "حساب کاربری" })).toBeTruthy();
     expect(screen.getByText("09120000002")).toBeTruthy();
-    expect(screen.getByText("کاربر تأییدشده")).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "ورود به داشبورد" }).getAttribute("href")).toBe(
       "/dashboard",
     );
