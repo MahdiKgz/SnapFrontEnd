@@ -4,6 +4,7 @@ import type {
   UserFileDetail,
   UserFileResponse,
   UserFileSummary,
+  UserFilesQuery,
   UserFilesResponse,
 } from "../model/types";
 
@@ -15,10 +16,11 @@ export const filesApi = topologyApi.injectEndpoints({
       query: () => "/files/summary",
       providesTags: [{ type: "Files", id: "SUMMARY" }],
     }),
-    getUserFiles: builder.query<UserFilesResponse, { skip?: number; limit?: number } | void>({
+    getUserFiles: builder.query<UserFilesResponse, UserFilesQuery | void>({
       query: (pagination) => ({
         url: "/files",
         params: {
+          ...pagination,
           skip: pagination?.skip ?? 0,
           limit: pagination?.limit ?? DEFAULT_FILES_LIMIT,
         },

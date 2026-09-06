@@ -272,4 +272,98 @@ describe("FileManagementDashboard", () => {
     ).toBeNull();
     expect(screen.queryByText("File 20")).toBeNull();
   });
+  it("debounces quick search, resets pagination, and uses server results without local filtering", async () => {
+    getFiles.mockImplementation(({ skip, limit }) => {
+      const response = {
+        data: { items: [summary], pagination: { skip, limit, total: 31, hasMore: true } },
+      };
+      return { data: response, currentData: response, isFetching: false, refetch };
+    });
+    render(
+      <MemoryRouter>
+        <FileManagementDashboard />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "صفحه بعد" }));
+    fireEvent.change(screen.getByRole("searchbox", { name: "جستجوی فایل‌ها" }), {
+      target: { value: "نام متفاوت" },
+    });
+    expect(getFiles).toHaveBeenLastCalledWith({ skip: 10, limit: 10 });
+    await waitFor(() =>
+      expect(getFiles).toHaveBeenLastCalledWith({ skip: 0, limit: 10, search: "نام متفاوت" }),
+    );
+    expect(screen.getByText("Parcel layer")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "پاک‌کردن جستجو و فیلترها" }));
+    expect(getFiles).toHaveBeenLastCalledWith({ skip: 0, limit: 10 });
+  });
+
+  it("applies filter drafts only on submit and resets the page", async () => {
+    getFiles.mockImplementation(({ skip, limit }) => {
+      const response = {
+        data: { items: [summary], pagination: { skip, limit, total: 31, hasMore: true } },
+      };
+      return { data: response, currentData: response, isFetching: false, refetch };
+    });
+    render(
+      <MemoryRouter>
+        <FileManagementDashboard />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "صفحه بعد" }));
+    fireEvent.click(screen.getByRole("button", { name: "فیلتر فایل‌ها" }));
+    const type = await screen.findByRole("combobox", { name: "نوع فایل" });
+    fireEvent.change(type, { target: { value: "geojson" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "خطاهای شناسایی‌شده" }), {
+      target: { value: "false" },
+    });
+    fireEvent.change(screen.getByLabelText("بارگذاری از تاریخ"), {
+      target: { value: "2026-09-01" },
+    });
+    fireEvent.change(screen.getByLabelText("بارگذاری تا تاریخ"), {
+      target: { value: "2026-09-06" },
+    });
+    expect(getFiles).toHaveBeenLastCalledWith({ skip: 10, limit: 10 });
+    fireEvent.click(screen.getByRole("button", { name: "اعمال فیلترها" }));
+    expect(getFiles).toHaveBeenLastCalledWith({
+      skip: 0,
+      limit: 10,
+      fileType: "geojson",
+      hasIssues: false,
+      uploadedFrom: new Date("2026-09-01T00:00:00").toISOString(),
+      uploadedTo: new Date("2026-09-07T00:00:00").toISOString(),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "صفحه بعد" }));
+    expect(getFiles.mock.lastCall?.[0]).toMatchObject({
+      skip: 10,
+      fileType: "geojson",
+      hasIssues: false,
+    });
+  });
+
+  it("shows a filtered empty state and clears the filters", async () => {
+    getFiles.mockImplementation((query) => {
+      const filtered = !!query.fileType;
+      const response = {
+        data: {
+          items: filtered ? [] : [summary],
+          pagination: { skip: 0, limit: 10, total: filtered ? 0 : 1, hasMore: false },
+        },
+      };
+      return { data: response, currentData: response, isFetching: false, refetch };
+    });
+    render(
+      <MemoryRouter>
+        <FileManagementDashboard />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "فیلتر فایل‌ها" }));
+    fireEvent.change(await screen.findByRole("combobox", { name: "نوع فایل" }), {
+      target: { value: "kml" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "اعمال فیلترها" }));
+    expect(screen.getByText("فایلی مطابق جستجو و فیلترها پیدا نشد")).toBeTruthy();
+    expect(screen.queryByText("هنوز فایلی ندارید")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "پاک‌کردن جستجو و فیلترها" }));
+    expect(screen.getByText("Parcel layer")).toBeTruthy();
+  });
 });

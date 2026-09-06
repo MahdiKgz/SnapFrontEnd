@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import {
   MapPinned,
   OctagonX,
   Pencil,
-  RefreshCw,
   Trash2,
   X,
 } from "lucide-react";
@@ -31,6 +30,8 @@ import {
   useRenameUserFileMutation,
 } from "../api/files-api";
 import type { UserFileStatus, UserFileSummary } from "../model/types";
+import { EMPTY_FILE_FILTERS, FileListToolbar } from "./file-list-toolbar";
+import type { FileFilterValues } from "./file-list-toolbar";
 
 const STATUS_PRESENTATION: Record<UserFileStatus, { label: string; className: string }> = {
   "dry-run-complete": {
@@ -511,18 +512,56 @@ export function FileManagementDashboard() {
   const navigate = useNavigate();
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(DEFAULT_FILES_LIMIT);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filters, setFilters] = useState(EMPTY_FILE_FILTERS);
+  const filterQuery = useMemo(() => {
+    const end = filters.uploadedTo ? new Date(`${filters.uploadedTo}T00:00:00`) : null;
+    if (end) end.setDate(end.getDate() + 1);
+    return {
+      ...(filters.fileType ? { fileType: filters.fileType } : {}),
+      ...(filters.hasIssues ? { hasIssues: filters.hasIssues === "true" } : {}),
+      ...(filters.uploadedFrom
+        ? { uploadedFrom: new Date(`${filters.uploadedFrom}T00:00:00`).toISOString() }
+        : {}),
+      ...(end ? { uploadedTo: end.toISOString() } : {}),
+    };
+  }, [filters]);
+  const hasFilters = !!debouncedSearch || Object.values(filters).some(Boolean);
+  const searchPending = search.trim() !== debouncedSearch;
+  useEffect(() => {
+    if (!searchPending) return;
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setSkip(0);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search, searchPending]);
+  const applyFilters = (value: FileFilterValues) => {
+    setFilters(value);
+    setSkip(0);
+    setDebouncedSearch(search.trim());
+  };
+  const clearFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
+    setFilters(EMPTY_FILE_FILTERS);
+    setSkip(0);
+  };
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const [viewFileId, setViewFileId] = useState<string | null>(null);
   const [editingFile, setEditingFile] = useState<UserFileSummary | null>(null);
-  const { currentData, data, isError, isFetching, refetch } = useGetUserFilesQuery({
+  const { currentData, isError, isFetching, refetch } = useGetUserFilesQuery({
     skip,
     limit,
+    ...filterQuery,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   });
   const [deleteFile] = useDeleteUserFileMutation();
   const [cancelHealing] = useCancelHealingMutation();
   const page = currentData?.data;
   const items = page?.items ?? [];
-  const total = data?.data.pagination.total ?? 0;
+  const total = page?.pagination.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const currentPage = Math.floor(skip / limit) + 1;
 
@@ -532,7 +571,7 @@ export function FileManagementDashboard() {
 
   useEffect(() => {
     if (tableScrollRef.current) tableScrollRef.current.scrollTop = 0;
-  }, [skip, limit]);
+  }, [skip, limit, filterQuery, debouncedSearch]);
 
   const handleDelete = async (id: string) => {
     await deleteFile(id).unwrap();
@@ -560,7 +599,7 @@ export function FileManagementDashboard() {
         <div className="grid shrink-0 grid-cols-3 gap-2 md:gap-4">
           <SummaryCard
             icon={<Files />}
-            label="تعداد فایل‌ها"
+            label={hasFilters ? "فایل‌های مطابق فیلتر" : "تعداد فایل‌ها"}
             value={total.toLocaleString("fa-IR")}
           />
           <SummaryCard
@@ -578,22 +617,37 @@ export function FileManagementDashboard() {
         </div>
 
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-3 md:px-5 md:py-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/60 px-4 py-3 md:px-5 md:py-4">
             <div>
               <h2 className="text-base font-bold">فهرست فایل‌های بارگذاری‌شده</h2>
               <p className="mt-1 text-xs text-muted-foreground">مرتب‌شده از جدیدترین بارگذاری</p>
             </div>
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="به‌روزرسانی فهرست"
-              onClick={() => void refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw className={isFetching ? "animate-spin" : ""} />
-            </Button>
+            <FileListToolbar
+              search={search}
+              onSearchChange={setSearch}
+              filters={filters}
+              onFiltersChange={applyFilters}
+              isFetching={isFetching}
+              onRefresh={() => void refetch()}
+            />
           </div>
 
+          {hasFilters && (
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-2 text-xs text-muted-foreground">
+              <span>
+                {isFetching
+                  ? "در حال جستجو…"
+                  : `${total.toLocaleString("fa-IR")} فایل مطابق جستجو و فیلترها`}
+              </span>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="shrink-0 text-primary hover:underline"
+              >
+                پاک‌کردن جستجو و فیلترها
+              </button>
+            </div>
+          )}
           <div
             ref={tableScrollRef}
             role="region"
@@ -618,9 +672,13 @@ export function FileManagementDashboard() {
             ) : items.length === 0 ? (
               <div className="p-12 text-center">
                 <Files className="mx-auto size-10 text-muted-foreground/50" />
-                <h3 className="mt-4 text-sm font-bold">هنوز فایلی ندارید</h3>
+                <h3 className="mt-4 text-sm font-bold">
+                  {hasFilters ? "فایلی مطابق جستجو و فیلترها پیدا نشد" : "هنوز فایلی ندارید"}
+                </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  اولین فایل مکانی خود را از میز کار نقشه بارگذاری کنید.
+                  {hasFilters
+                    ? "عبارت جستجو یا فیلترها را تغییر دهید."
+                    : "اولین فایل مکانی خود را از میز کار نقشه بارگذاری کنید."}
                 </p>
               </div>
             ) : (
@@ -745,7 +803,7 @@ export function FileManagementDashboard() {
                 size="icon-sm"
                 variant="outline"
                 aria-label="صفحه قبل"
-                disabled={skip === 0 || isFetching}
+                disabled={skip === 0 || isFetching || searchPending}
                 onClick={() => setSkip(Math.max(0, skip - limit))}
               >
                 <ChevronRight />
@@ -757,7 +815,7 @@ export function FileManagementDashboard() {
                 size="icon-sm"
                 variant="outline"
                 aria-label="صفحه بعد"
-                disabled={!page?.pagination.hasMore || isFetching}
+                disabled={!page?.pagination.hasMore || isFetching || searchPending}
                 onClick={() => setSkip(skip + limit)}
               >
                 <ChevronLeft />

@@ -78,3 +78,13 @@ export interface UserFileResponse<T = UserFileDetail> {
   success: boolean;
   data: T;
 }
+
+export interface UserFilesQuery {
+  skip?: number;
+  limit?: number;
+  search?: string;
+  fileType?: string;
+  hasIssues?: boolean;
+  uploadedFrom?: string;
+  uploadedTo?: string;
+}

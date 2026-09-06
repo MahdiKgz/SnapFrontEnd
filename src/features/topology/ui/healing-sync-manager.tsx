@@ -116,25 +116,25 @@ export function HealingSyncManager() {
   });
 
   return (
-    <div className="pointer-events-none fixed top-5 inset-x-0 z-80 flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-2">
+    <div className="pointer-events-none fixed inset-x-0 top-5 z-80 mx-auto flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-2">
       {notifications.map((notification) => (
         <div
           key={notification.id}
           role="status"
-          className="pointer-events-auto flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/95 px-4 py-3 text-sm text-slate-100 shadow-2xl backdrop-blur"
+          className="pointer-events-auto flex items-center gap-3 rounded-xl border border-border bg-popover/95 px-4 py-3 text-sm text-popover-foreground shadow-2xl backdrop-blur"
         >
           {notification.kind === "completed" ? (
-            <CheckCircle2 className="size-5 shrink-0 text-emerald-400" />
+            <CheckCircle2 className="size-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
           ) : notification.kind === "failed" ? (
-            <CircleX className="size-5 shrink-0 text-red-400" />
+            <CircleX className="size-5 shrink-0 text-destructive" />
           ) : (
-            <Info className="size-5 shrink-0 text-amber-400" />
+            <Info className="size-5 shrink-0 text-amber-700 dark:text-amber-400" />
           )}
           <span className="min-w-0 flex-1">{notification.message}</span>
           <button
             type="button"
             aria-label="بستن اعلان"
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => dispatch(dismissHealingNotification(notification.id))}
           >
             <X className="size-4" />
