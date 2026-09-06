@@ -5,6 +5,7 @@ import type { Map as MapLibreMap } from "maplibre-gl";
 
 import { featureName } from "../model/feature-details";
 import { useFeatureInspection } from "../model/use-feature-inspection";
+import { FeatureComparison } from "./feature-comparison";
 import { InspectionAccordion } from "./inspection-accordion";
 import "./inspection-animation.css";
 
@@ -17,12 +18,23 @@ export function FeatureInspectionPanel({
   mapRef: RefObject<MapLibreMap | null>;
   isMapReady: boolean;
 }) {
-  const { inspection, error, loading, selectedVertex, selectVertex, close, isClosing } =
-    useFeatureInspection({
-      mapRef,
-      isMapReady,
-      enabled: true,
-    });
+  const {
+    inspection,
+    inspections,
+    focusInspection,
+    removeInspection,
+    error,
+    notice,
+    loading,
+    selectedVertex,
+    selectVertex,
+    close,
+    isClosing,
+  } = useFeatureInspection({
+    mapRef,
+    isMapReady,
+    enabled: true,
+  });
   if (!inspection && !error && !loading) return null;
   const summary = inspection?.summary;
   return (
@@ -35,7 +47,11 @@ export function FeatureInspectionPanel({
     >
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-3 py-2.5">
         <h2 className="min-w-0 truncate text-sm font-bold">
-          {inspection ? featureName(inspection.entry) : "اطلاعات عارضه"}
+          {inspections.length === 2
+            ? "مقایسهٔ دو عارضه"
+            : inspection
+              ? featureName(inspection.entry)
+              : "اطلاعات عارضه"}
         </h2>
         <button
           type="button"
@@ -58,39 +74,93 @@ export function FeatureInspectionPanel({
             {error}
           </p>
         )}
+        {notice && (
+          <p role="status" className="mb-2 text-xs leading-5 text-amber-700 dark:text-amber-300">
+            {notice}
+          </p>
+        )}
         {inspection && summary && (
           <>
-            <dl className="grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-3 text-center text-xs">
-              <div>
-                <dt className="text-[11px] text-muted-foreground">رأس‌ها</dt>
-                <dd className="mt-1.5 font-semibold" title="رأس پایانیِ تکراری حلقه شمرده نمی‌شود">
-                  {format(summary.vertices.length)}{" "}
-                  <span className="text-[10px] font-normal text-muted-foreground">
-                    {inspection.entry.feature.geometry?.type}
-                  </span>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[11px] text-muted-foreground">مساحت</dt>
-                <dd className="mt-1.5 font-semibold">
-                  <bdi dir="ltr">
-                    {summary.squareMeters == null ? "—" : `${format(summary.squareMeters)} m²`}
-                  </bdi>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[11px] text-muted-foreground">
-                  {summary.perimeterKm == null ? "طول" : "محیط"}
-                </dt>
-                <dd className="mt-1.5 font-semibold">
-                  <bdi dir="ltr">
-                    {summary.lengthKm == null
-                      ? "—"
-                      : `${format(summary.perimeterKm ?? summary.lengthKm)} km`}
-                  </bdi>
-                </dd>
-              </div>
-            </dl>
+            <div className="grid grid-cols-2 gap-2" aria-label="عارضه‌های انتخاب‌شده">
+              {inspections.map((item) => (
+                <div
+                  key={item.key}
+                  className={`flex min-w-0 items-center gap-1 rounded-xl border p-1 ${item.key === inspection.key ? "border-primary/50 bg-primary/5" : "border-border"}`}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={item.key === inspection.key}
+                    aria-label={`جزئیات عارضه ${(item.slot + 1).toLocaleString("fa-IR")}: ${featureName(item.entry)}`}
+                    onClick={() => focusInspection(item.key)}
+                    title={featureName(item.entry)}
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-xs focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span
+                      className={`flex size-5 shrink-0 items-center justify-center rounded-full text-white ${item.slot === 0 ? "bg-orange-500" : "bg-sky-500"}`}
+                    >
+                      {(item.slot + 1).toLocaleString("fa-IR")}
+                    </span>
+                    <span className="truncate">{featureName(item.entry)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`حذف انتخاب ${featureName(item.entry)}`}
+                    onClick={() => removeInspection(item.key)}
+                    className="shrink-0 rounded-lg p-1 text-muted-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+              {inspections.length === 1 && (
+                <p className="flex items-center rounded-xl border border-dashed border-border px-3 py-2 text-[11px] leading-5 text-muted-foreground">
+                  برای مقایسه، روی عارضهٔ دوم کلیک کنید.
+                </p>
+              )}
+            </div>
+            {inspections.length === 2 ? (
+              <FeatureComparison first={inspections[0]} second={inspections[1]} />
+            ) : (
+              <dl className="mt-3 grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-3 text-center text-xs">
+                <div>
+                  <dt className="text-[11px] text-muted-foreground">رأس‌ها</dt>
+                  <dd
+                    className="mt-1.5 font-semibold"
+                    title="رأس پایانیِ تکراری حلقه شمرده نمی‌شود"
+                  >
+                    {format(summary.vertices.length)}{" "}
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      {inspection.entry.feature.geometry?.type}
+                    </span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] text-muted-foreground">مساحت</dt>
+                  <dd className="mt-1.5 font-semibold">
+                    <bdi dir="ltr">
+                      {summary.squareMeters == null ? "—" : `${format(summary.squareMeters)} m²`}
+                    </bdi>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] text-muted-foreground">
+                    {summary.perimeterKm == null ? "طول" : "محیط"}
+                  </dt>
+                  <dd className="mt-1.5 font-semibold">
+                    <bdi dir="ltr">
+                      {summary.lengthKm == null
+                        ? "—"
+                        : `${format(summary.perimeterKm ?? summary.lengthKm)} km`}
+                    </bdi>
+                  </dd>
+                </div>
+              </dl>
+            )}
+            {inspections.length === 2 && (
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                جزئیات {featureName(inspection.entry)}؛ برای تغییر، انتخاب بالای پنل را عوض کنید.
+              </p>
+            )}
             <div
               role="status"
               className="mt-2 flex items-center justify-between gap-3 px-1 text-[11px]"
