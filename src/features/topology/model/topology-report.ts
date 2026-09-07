@@ -14,10 +14,16 @@ function getFeatureIndex(
   return typeof propertyIndex === "number" ? propertyIndex : fallbackIndex;
 }
 
+const preparedCollections = new WeakMap<
+  AffectedFeatureCollection,
+  FeatureCollection<Geometry, GeoJsonProperties>
+>();
 export function prepareAffectedFeatureCollection(
   featureCollection: AffectedFeatureCollection,
 ): FeatureCollection<Geometry, GeoJsonProperties> {
-  return {
+  const cached = preparedCollections.get(featureCollection);
+  if (cached) return cached;
+  const prepared: FeatureCollection<Geometry, GeoJsonProperties> = {
     type: "FeatureCollection",
     features: featureCollection.features.map((feature, fallbackIndex) => {
       const normalizedFeature: Feature<Geometry, GeoJsonProperties> = {
@@ -35,14 +41,14 @@ export function prepareAffectedFeatureCollection(
       return normalizedFeature;
     }),
   };
+  preparedCollections.set(featureCollection, prepared);
+  return prepared;
 }
 
 export function getSelectedFeatureCollection(
   featureCollection: AffectedFeatureCollection,
   selectedFeatureIndexes: number[],
 ): FeatureCollection<Geometry, GeoJsonProperties> {
-  const preparedFeatures = prepareAffectedFeatureCollection(featureCollection);
-
   if (selectedFeatureIndexes.length === 0) {
     return {
       type: "FeatureCollection",
@@ -50,6 +56,7 @@ export function getSelectedFeatureCollection(
     };
   }
 
+  const preparedFeatures = prepareAffectedFeatureCollection(featureCollection);
   const selectedIndexes = new Set(selectedFeatureIndexes);
 
   return {

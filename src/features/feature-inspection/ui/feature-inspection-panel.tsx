@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { type RefObject, useState } from "react";
 
 import { LoaderCircle, X } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
@@ -35,6 +35,9 @@ export function FeatureInspectionPanel({
     isMapReady,
     enabled: true,
   });
+  const [vertexPage, setVertexPage] = useState({ key: "", page: 0 });
+  const pageKey = inspection?.key ?? "";
+  const page = vertexPage.key === pageKey ? vertexPage.page : 0;
   if (!inspection && !error && !loading) return null;
   const summary = inspection?.summary;
   return (
@@ -240,38 +243,61 @@ export function FeatureInspectionPanel({
                     </tr>
                   </thead>
                   <tbody>
-                    {summary.vertices.map((vertex, index) => (
-                      <tr
-                        key={vertex.path}
-                        aria-selected={selectedVertex === index}
-                        onClick={() => selectVertex(vertex, index)}
-                        className={`cursor-pointer border-t border-border hover:bg-accent ${selectedVertex === index ? "bg-orange-500/15" : ""}`}
-                      >
-                        <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            aria-label={`نمایش رأس ${index + 1}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              selectVertex(vertex, index);
-                            }}
-                            className="rounded px-2 py-1 font-semibold text-primary focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            {format(index + 1)}
-                          </button>
-                        </td>
-                        <td className="px-3 py-2">
-                          <bdi dir="ltr">{vertex.path}</bdi>
-                        </td>
-                        {[0, 1, 2].map((axis) => (
-                          <td key={axis} className="px-3 py-2 font-mono">
-                            <bdi dir="ltr">{vertex.coordinate[axis] ?? "—"}</bdi>
+                    {summary.vertices.slice(page * 50, (page + 1) * 50).map((vertex, offset) => {
+                      const index = page * 50 + offset;
+                      return (
+                        <tr
+                          key={vertex.path}
+                          aria-selected={selectedVertex === index}
+                          onClick={() => selectVertex(vertex, index)}
+                          className={`cursor-pointer border-t border-border hover:bg-accent ${selectedVertex === index ? "bg-orange-500/15" : ""}`}
+                        >
+                          <td className="px-3 py-2">
+                            <button
+                              type="button"
+                              aria-label={`نمایش رأس ${index + 1}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                selectVertex(vertex, index);
+                              }}
+                              className="rounded px-2 py-1 font-semibold text-primary focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              {format(index + 1)}
+                            </button>
                           </td>
-                        ))}
-                      </tr>
-                    ))}
+                          <td className="px-3 py-2">
+                            <bdi dir="ltr">{vertex.path}</bdi>
+                          </td>
+                          {[0, 1, 2].map((axis) => (
+                            <td key={axis} className="px-3 py-2 font-mono">
+                              <bdi dir="ltr">{vertex.coordinate[axis] ?? "—"}</bdi>
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
+              </div>
+              <div className="flex items-center justify-between border-t border-border p-2 text-xs">
+                <button
+                  type="button"
+                  disabled={page === 0}
+                  onClick={() => setVertexPage({ key: pageKey, page: page - 1 })}
+                >
+                  قبلی
+                </button>
+                <span>
+                  {(page + 1).toLocaleString("fa-IR")} /{" "}
+                  {Math.max(1, Math.ceil(summary.vertices.length / 50)).toLocaleString("fa-IR")}
+                </span>
+                <button
+                  type="button"
+                  disabled={(page + 1) * 50 >= summary.vertices.length}
+                  onClick={() => setVertexPage({ key: pageKey, page: page + 1 })}
+                >
+                  بعدی
+                </button>
               </div>
             </InspectionAccordion>
             {Object.keys(inspection.entry.feature.properties ?? {}).length > 0 && (

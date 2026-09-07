@@ -44,12 +44,24 @@ export function MapWorkbench() {
     GeoJsonProperties
   > | null>(null);
   const [isOriginalVisible, setIsOriginalVisible] = useState(false);
-  const [selectedIssueIndex, setSelectedIssueIndex] = useState<number | null>(null);
+  const [reviewSelection, setReviewSelection] = useState<{ key: string; index: number } | null>(
+    null,
+  );
   const requestedHealedFileId = useRef<string | null>(null);
   const [loadHealedOutput, healedOutputRequest] = useLazyGetHealedOutputQuery();
-  const [loadOriginalInput] = useLazyGetOriginalInputQuery();
+  const [loadOriginalInput, originalRequest] = useLazyGetOriginalInputQuery();
+  const [originalError, setOriginalError] = useState(false);
   const healedFileId = searchParams.get("healedFile");
   const requestedIssue = searchParams.get("issue");
+  const reviewKey = `${healedFileId}:${requestedIssue}`;
+  const selectedIssueIndex =
+    reviewSelection?.key === reviewKey
+      ? reviewSelection.index
+      : requestedIssue &&
+          /^\d+$/.test(requestedIssue) &&
+          Number.isSafeInteger(Number(requestedIssue))
+        ? Number(requestedIssue)
+        : null;
   const fileDetailRequest = useGetUserFileQuery(healedFileId ?? "", {
     skip: !healedFileId,
   });
@@ -59,9 +71,12 @@ export function MapWorkbench() {
     [fileDetail?.report?.issues],
   );
 
-  const selectReviewIssue = useCallback((issueIndex: number) => {
-    setSelectedIssueIndex(issueIndex);
-  }, []);
+  const selectReviewIssue = useCallback(
+    (issueIndex: number) => {
+      setReviewSelection({ key: reviewKey, index: issueIndex });
+    },
+    [reviewKey],
+  );
 
   useOriginalGeometryOverlay({
     data: originalGeoJson,
@@ -71,7 +86,7 @@ export function MapWorkbench() {
   });
   useManualReviewMarkers({
     interactive: !isMeasuring,
-    data: originalGeoJson,
+    data: fileDetail?.report?.affectedFeatureCollection ?? null,
     isMapReady,
     issues: reviewIssues,
     mapRef,
@@ -100,22 +115,24 @@ export function MapWorkbench() {
     setHealedFileLoadError(false);
     setOriginalGeoJson(null);
     setIsOriginalVisible(false);
-    void Promise.all([
-      loadHealedOutput(`/heal/${encodeURIComponent(healedFileId)}/output`).unwrap(),
-      loadOriginalInput(healedFileId)
-        .unwrap()
-        .catch(() => null),
-    ])
-      .then(async ([output, original]) => {
+    let cancelled = false;
+    const request = loadHealedOutput(`/heal/${encodeURIComponent(healedFileId)}/output`);
+    void request
+      .unwrap()
+      .then(async (output) => {
+        if (cancelled) return;
         setTopologyResult(null);
         setSelectedFeatureIndexes([]);
         setIsHealedResultVisible(true);
-        setOriginalGeoJson(original);
         await previewGeoJson(output);
       })
       .catch(() => {
-        setHealedFileLoadError(true);
+        if (!cancelled) setHealedFileLoadError(true);
       });
+    return () => {
+      cancelled = true;
+      requestedHealedFileId.current = null;
+    };
   }, [
     healedFileId,
     healedFileLoadAttempt,
@@ -124,14 +141,6 @@ export function MapWorkbench() {
     loadOriginalInput,
     previewGeoJson,
   ]);
-
-  useEffect(() => {
-    if (!requestedIssue || !/^\d+$/.test(requestedIssue)) {
-      setSelectedIssueIndex(null);
-      return;
-    }
-    setSelectedIssueIndex(Number(requestedIssue));
-  }, [healedFileId, requestedIssue]);
 
   const retryHealedFile = () => {
     requestedHealedFileId.current = null;
@@ -180,7 +189,7 @@ export function MapWorkbench() {
         </div>
       )}
 
-      {healedFileId && originalGeoJson && !healedFileLoadError && (
+      {healedFileId && !healedFileLoadError && (
         <button
           type="button"
           aria-pressed={isOriginalVisible}
@@ -189,10 +198,32 @@ export function MapWorkbench() {
               ? "border-amber-400/50 bg-amber-500/90 text-slate-950"
               : "border-border/70 bg-background/90 text-foreground"
           }`}
-          onClick={() => setIsOriginalVisible((visible) => !visible)}
+          disabled={originalRequest?.isFetching}
+          onClick={async () => {
+            if (originalGeoJson) {
+              setIsOriginalVisible((visible) => !visible);
+              return;
+            }
+            const id = healedFileId;
+            setOriginalError(false);
+            try {
+              const original = await loadOriginalInput(id).unwrap();
+              if (requestedHealedFileId.current !== id || !mapRef.current) return;
+              setOriginalGeoJson(original);
+              setIsOriginalVisible(true);
+            } catch {
+              if (requestedHealedFileId.current === id) setOriginalError(true);
+            }
+          }}
         >
           {isOriginalVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          {isOriginalVisible ? "پنهان‌کردن هندسه اصلی" : "نمایش هندسه اصلی"}
+          {originalRequest?.isFetching
+            ? "در حال دریافت…"
+            : originalError
+              ? "تلاش دوباره برای هندسه اصلی"
+              : isOriginalVisible
+                ? "پنهان‌کردن هندسه اصلی"
+                : "نمایش هندسه اصلی"}
         </button>
       )}
 

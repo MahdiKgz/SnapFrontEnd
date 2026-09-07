@@ -36,6 +36,7 @@ class FakeMap {
     if (this.removed) throw new Error("Cannot read properties of undefined (reading 'getSource')");
     return this.sources.get(id);
   });
+  setPaintProperty = vi.fn();
   addLayer = vi.fn(({ id }: { id: string }) => this.layers.add(id));
   addSource = vi.fn((id: string) => this.sources.set(id, { setData: vi.fn() }));
   removeLayer = vi.fn((id: string) => this.layers.delete(id));

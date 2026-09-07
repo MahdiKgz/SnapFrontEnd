@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 
 import { getGeoJsonBounds } from "@/shared/lib/geo";
@@ -21,11 +21,26 @@ const ORIGINAL_POINT_ID = "snapgis-original-point";
 const REVIEW_SOURCE_ID = "snapgis-manual-review";
 const REVIEW_LAYER_ID = "snapgis-manual-review-markers";
 
+const featureIndexes = new WeakMap<
+  FeatureCollection<Geometry, GeoJsonProperties>,
+  Map<number, Feature<Geometry, GeoJsonProperties>>
+>();
+
 export function getIssueCoordinate(
   issue: TopologyIssue,
   source: FeatureCollection<Geometry, GeoJsonProperties>,
 ): Position | null {
-  const feature = source.features[issue.featureIndex];
+  let indexes = featureIndexes.get(source);
+  if (!indexes) {
+    indexes = new Map(
+      source.features.map((feature, index) => [
+        (feature as typeof feature & { snapgisFeatureIndex?: number }).snapgisFeatureIndex ?? index,
+        feature,
+      ]),
+    );
+    featureIndexes.set(source, indexes);
+  }
+  const feature = indexes.get(issue.featureIndex);
   if (!feature?.geometry) return null;
   let cursor: unknown = "coordinates" in feature.geometry ? feature.geometry.coordinates : null;
   for (const segment of issue.location.coordinatePath ?? []) {
@@ -127,6 +142,10 @@ export function useManualReviewMarkers({
   onSelectIssue: (issueIndex: number) => void;
   selectedIssueIndex: number | null;
 }) {
+  const interactiveRef = useRef(interactive);
+  useEffect(() => {
+    interactiveRef.current = interactive;
+  }, [interactive]);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isMapReady || !data) return;
@@ -138,7 +157,7 @@ export function useManualReviewMarkers({
             {
               type: "Feature",
               geometry: { type: "Point", coordinates: coordinate },
-              properties: { issueIndex, code: issue.code },
+              properties: { issueIndex: issue.issueIndex ?? issueIndex, code: issue.code },
             },
           ]
         : [];
@@ -152,28 +171,23 @@ export function useManualReviewMarkers({
       type: "circle",
       source: REVIEW_SOURCE_ID,
       paint: {
-        "circle-color": [
-          "case",
-          ["==", ["get", "issueIndex"], selectedIssueIndex ?? -1],
-          "#ef4444",
-          "#f59e0b",
-        ],
-        "circle-radius": ["case", ["==", ["get", "issueIndex"], selectedIssueIndex ?? -1], 9, 7],
+        "circle-color": ["case", ["==", ["get", "issueIndex"], -1], "#ef4444", "#f59e0b"],
+        "circle-radius": ["case", ["==", ["get", "issueIndex"], -1], 9, 7],
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 2,
       },
     });
     const selectMarker = (event: MapLayerMouseEvent) => {
-      if (!interactive) return;
+      if (!interactiveRef.current) return;
       const issueIndex = Number(event.features?.[0]?.properties?.issueIndex);
       if (Number.isSafeInteger(issueIndex)) onSelectIssue(issueIndex);
     };
     const showPointer = () => {
-      if (!interactive) return;
+      if (!interactiveRef.current) return;
       map.getCanvas().style.cursor = "pointer";
     };
     const hidePointer = () => {
-      if (!interactive) return;
+      if (!interactiveRef.current) return;
       map.getCanvas().style.cursor = "";
     };
     map.on("click", REVIEW_LAYER_ID, selectMarker);
@@ -189,12 +203,29 @@ export function useManualReviewMarkers({
       if (map.getLayer(REVIEW_LAYER_ID)) map.removeLayer(REVIEW_LAYER_ID);
       if (map.getSource(REVIEW_SOURCE_ID)) map.removeSource(REVIEW_SOURCE_ID);
     };
-  }, [data, interactive, isMapReady, issues, mapRef, onSelectIssue, selectedIssueIndex]);
+  }, [data, isMapReady, issues, mapRef, onSelectIssue]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady || !map.getLayer(REVIEW_LAYER_ID)) return;
+    map.setPaintProperty(REVIEW_LAYER_ID, "circle-color", [
+      "case",
+      ["==", ["get", "issueIndex"], selectedIssueIndex ?? -1],
+      "#ef4444",
+      "#f59e0b",
+    ]);
+    map.setPaintProperty(REVIEW_LAYER_ID, "circle-radius", [
+      "case",
+      ["==", ["get", "issueIndex"], selectedIssueIndex ?? -1],
+      9,
+      7,
+    ]);
+  }, [data, isMapReady, issues, mapRef, selectedIssueIndex]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !data || selectedIssueIndex === null) return;
-    const issue = issues[selectedIssueIndex];
+    const issue = issues.find((item, index) => (item.issueIndex ?? index) === selectedIssueIndex);
     if (!issue) return;
     const coordinate = getIssueCoordinate(issue, data);
     if (!coordinate) return;

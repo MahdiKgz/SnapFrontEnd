@@ -15,6 +15,7 @@ import {
 
 import type { TopologyIssueGroup, TopologyUploadData } from "../model/types";
 import { useTopologyHealing } from "../model/use-topology-healing";
+import { IssueDetails } from "./issue-details";
 import { TopologyIssueGroupCard } from "./topology-issue-group-card";
 
 interface TopologyResultsProps {
@@ -338,6 +339,13 @@ export function TopologyResults({
           />
         ))}
       </div>
+      {data.report.issueDetails?.paginated && (
+        <IssueDetails
+          key={`${data.jobId}:${selectedGroupId}`}
+          jobId={data.jobId}
+          code={data.report.issueGroups.find((group) => group.groupId === selectedGroupId)?.code}
+        />
+      )}
     </section>
   );
 }

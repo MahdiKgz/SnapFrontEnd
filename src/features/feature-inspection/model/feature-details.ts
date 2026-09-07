@@ -1,8 +1,9 @@
 import { area } from "@turf/area";
 import { booleanIntersects } from "@turf/boolean-intersects";
 import { distance } from "@turf/distance";
-import { pointToLineDistance } from "@turf/point-to-line-distance";
 import type { Feature, GeoJSON, Geometry, Position } from "geojson";
+
+import { distanceIndex, nearestIndexed } from "./distance-index";
 
 export interface Vertex {
   coordinate: Position;
@@ -103,32 +104,38 @@ export function featureSummary(feature: Feature) {
   };
 }
 
-/** Minimum distance between actual geometries, including segment interiors and holes. */
-export function featureDistance(a: Feature, b: Feature): number {
+const prepared = new WeakMap<
+  Feature,
+  { parts: ReturnType<typeof geometryParts>; index: ReturnType<typeof distanceIndex> }
+>();
+function prepare(feature: Feature) {
+  let value = prepared.get(feature);
+  if (!value) {
+    const parts = geometryParts(feature.geometry);
+    value = {
+      parts,
+      index: distanceIndex(
+        parts.vertices.map((v) => v.coordinate),
+        parts.lines,
+      ),
+    };
+    prepared.set(feature, value);
+  }
+  return value;
+}
+
+/** Exact geometry distance; maxKm bounds neighbor searches without changing the 1 km rule. */
+export function featureDistance(a: Feature, b: Feature, maxKm = Infinity): number {
   if (!a.geometry || !b.geometry) return Infinity;
-  const left = geometryParts(a.geometry),
-    right = geometryParts(b.geometry);
-  if (!left.vertices.length || !right.vertices.length) return Infinity;
+  const left = prepare(a),
+    right = prepare(b);
+  if (!left.parts.vertices.length || !right.parts.vertices.length) return Infinity;
   if (booleanIntersects(a, b)) return 0;
-  let nearest = Infinity;
-  const fromVertices = (vertices: Vertex[], target: ReturnType<typeof geometryParts>) => {
-    for (const { coordinate } of vertices) {
-      for (const line of target.lines)
-        nearest = Math.min(
-          nearest,
-          pointToLineDistance(
-            coordinate,
-            { type: "LineString", coordinates: line },
-            { units: "kilometers" },
-          ),
-        );
-      // Isolated points in mixed geometries must also participate.
-      for (const other of target.vertices)
-        nearest = Math.min(nearest, distance(coordinate, other.coordinate));
-    }
-  };
-  fromVertices(left.vertices, right);
-  fromVertices(right.vertices, left);
+  let nearest = maxKm;
+  for (const { coordinate } of left.parts.vertices)
+    nearest = nearestIndexed(coordinate, right.index, nearest);
+  for (const { coordinate } of right.parts.vertices)
+    nearest = nearestIndexed(coordinate, left.index, nearest);
   return nearest;
 }
 

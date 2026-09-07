@@ -3,17 +3,17 @@ import type { RefObject } from "react";
 
 import { distance } from "@turf/distance";
 import { Marker } from "maplibre-gl";
-import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from "maplibre-gl";
+import type {
+  GeoJSONSource,
+  Map as MapLibreMap,
+  MapMouseEvent,
+  MapSourceDataEvent,
+} from "maplibre-gl";
 
-import {
-  featureDistance,
-  featureName,
-  featureSummary,
-  featuresOf,
-  isNeighborDistance,
-  resolveFeature,
-} from "./feature-details";
+import { featuresOf } from "./feature-details";
+import type { featureSummary } from "./feature-details";
 import type { FeatureEntry, Neighbor, Vertex } from "./feature-details";
+import { inspectInWorker } from "./inspection-worker-client";
 
 export interface Inspection {
   key: string;
@@ -81,7 +81,13 @@ export function useFeatureInspection({
       epoch = 0;
     let selected: Inspection[] = [];
     let queue = Promise.resolve();
-    const yieldTimers = new Set<ReturnType<typeof setTimeout>>();
+    const jobs = new Set<AbortController>();
+    const neighborJobs = new Map<string, AbortController>();
+    const cancelJobs = () => {
+      jobs.forEach((job) => job.abort());
+      jobs.clear();
+      neighborJobs.clear();
+    };
     const isCurrent = () => active && mapRef.current === map;
     const clearOverlay = () => {
       if (!isCurrent() || !hasOverlay) return;
@@ -140,6 +146,8 @@ export function useFeatureInspection({
       });
     };
     const remove = (key: string) => {
+      neighborJobs.get(key)?.abort();
+      neighborJobs.delete(key);
       selected = selected.filter((item) => item.key !== key);
       if (!selected.length) {
         close();
@@ -155,6 +163,7 @@ export function useFeatureInspection({
       remove,
       clear: () => {
         epoch++;
+        cancelJobs();
         queue = Promise.resolve();
         selected = [];
         clearOverlay();
@@ -165,6 +174,8 @@ export function useFeatureInspection({
     const inspect = async (event: MapMouseEvent, clickEpoch: number) => {
       const current = () => isCurrent() && epoch === clickEpoch;
       if (!current()) return;
+      const controller = new AbortController();
+      jobs.add(controller);
       try {
         const hits = map
           .queryRenderedFeatures(event.point)
@@ -194,7 +205,17 @@ export function useFeatureInspection({
           const source = canonicalSource(hit.source);
           const features = await load(source);
           if (!current()) return;
-          const index = resolveFeature(features, hit, point, tolerance);
+          const index = await inspectInWorker<number>(
+            {
+              type: "resolve",
+              features,
+              hit: { id: hit.id, properties: hit.properties },
+              point,
+              tolerance,
+            },
+            controller.signal,
+          );
+          if (!current()) return;
           if (index >= 0) {
             entry = { source, feature: features[index], index };
             break;
@@ -210,7 +231,11 @@ export function useFeatureInspection({
           setNotice("حداکثر دو عارضه قابل مقایسه است؛ ابتدا یکی از انتخاب‌ها را حذف کنید.");
           return;
         }
-        const summary = featureSummary(entry.feature);
+        const summary = await inspectInWorker<ReturnType<typeof featureSummary>>(
+          { type: "summary", feature: entry.feature },
+          controller.signal,
+        );
+        if (!current()) return;
         const result: Inspection = {
           key,
           slot: selected.some((item) => item.slot === 0) ? 1 : 0,
@@ -237,43 +262,32 @@ export function useFeatureInspection({
               inspectable(layer.source)
             )
               visibleSources.add(canonicalSource(layer.source));
-          const neighbors: Neighbor[] = [];
-          let skippedNeighbors = 0,
-            count = 0;
-          for (const source of visibleSources) {
-            if (!present()) return;
-            let features: ReturnType<typeof featuresOf>;
-            try {
-              features = await load(source);
-            } catch {
-              skippedNeighbors++;
-              continue;
-            }
-            if (!present()) return;
-            for (let index = 0; index < features.length; index++) {
-              if (source === entry.source && index === entry.index) continue;
-              if (++count % 20 === 0)
-                await new Promise<void>((resolve) => {
-                  const timer = setTimeout(() => {
-                    yieldTimers.delete(timer);
-                    resolve();
-                  }, 0);
-                  yieldTimers.add(timer);
-                });
+          const neighborController = new AbortController();
+          neighborJobs.set(key, neighborController);
+          jobs.add(neighborController);
+          let resultData: { neighbors: Neighbor[]; skippedNeighbors: number };
+          try {
+            const inputs = [];
+            let failedSources = 0;
+            for (const source of visibleSources) {
               if (!present()) return;
               try {
-                const distanceKm = featureDistance(entry.feature, features[index]);
-                if (isNeighborDistance(distanceKm))
-                  neighbors.push({
-                    name: featureName({ feature: features[index], source, index }),
-                    distanceKm,
-                  });
+                inputs.push({ source, features: await load(source) });
               } catch {
-                skippedNeighbors++;
+                failedSources++;
               }
             }
+            if (!present()) return;
+            resultData = await inspectInWorker(
+              { type: "neighbors", entry, datasets: inputs },
+              neighborController.signal,
+            );
+            resultData.skippedNeighbors += failedSources;
+          } finally {
+            jobs.delete(neighborController);
+            if (neighborJobs.get(key) === neighborController) neighborJobs.delete(key);
           }
-          neighbors.sort((a, b) => a.distanceKm - b.distanceKm);
+          const { neighbors, skippedNeighbors } = resultData;
           if (present()) {
             selected = selected.map((item) =>
               item.entry === result.entry
@@ -295,6 +309,7 @@ export function useFeatureInspection({
       } catch {
         if (current()) setError("خواندن اطلاعات عارضه ممکن نشد. هندسه آن را بررسی کنید.");
       } finally {
+        jobs.delete(controller);
         if (current()) setLoading(false);
       }
     };
@@ -305,12 +320,23 @@ export function useFeatureInspection({
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !event.defaultPrevented) close();
     };
+    const onSourceData = (event: MapSourceDataEvent) => {
+      if (
+        event.sourceDataType === "content" &&
+        inspectable(event.sourceId) &&
+        map.getSource(event.sourceId)?.type === "geojson" &&
+        (selected.length || jobs.size)
+      )
+        close();
+    };
+    map.on("sourcedata", onSourceData);
     map.on("click", onClick);
     window.addEventListener("keydown", onKey);
     return () => {
       if (closeTimer.current) clearTimeout(closeTimer.current);
       closeTimer.current = null;
-      yieldTimers.forEach(clearTimeout);
+      cancelJobs();
+      map.off("sourcedata", onSourceData);
       map.off("click", onClick);
       window.removeEventListener("keydown", onKey);
       vertexRef.current?.remove();

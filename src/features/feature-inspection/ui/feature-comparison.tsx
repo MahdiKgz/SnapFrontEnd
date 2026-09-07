@@ -1,19 +1,40 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 
-import { featureDistance } from "../model/feature-details";
+import { inspectInWorker } from "../model/inspection-worker-client";
 import type { Inspection } from "../model/use-feature-inspection";
 
 const format = (value: number, unit = "") =>
   `${value.toLocaleString("fa-IR", { maximumSignificantDigits: 7 })}${unit ? ` ${unit}` : ""}`;
 export function FeatureComparison({ first, second }: { first: Inspection; second: Inspection }) {
-  const separation = useMemo(() => {
-    try {
-      const value = featureDistance(first.entry.feature, second.entry.feature);
-      return Number.isFinite(value) ? value : null;
-    } catch {
-      return null;
-    }
-  }, [first.entry.feature, second.entry.feature]);
+  const [measurement, setMeasurement] = useState<{
+    first: Inspection["entry"]["feature"];
+    second: Inspection["entry"]["feature"];
+    value: number | null;
+  } | null>(null);
+  const firstFeature = first.entry.feature,
+    secondFeature = second.entry.feature;
+  const ready = measurement?.first === firstFeature && measurement?.second === secondFeature;
+  const separation = ready ? measurement.value : null;
+  useEffect(() => {
+    const controller = new AbortController();
+    void inspectInWorker<number>(
+      { type: "distance", first: firstFeature, second: secondFeature },
+      controller.signal,
+    )
+      .then((value) => {
+        if (!controller.signal.aborted)
+          setMeasurement({
+            first: firstFeature,
+            second: secondFeature,
+            value: Number.isFinite(value) ? value : null,
+          });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setMeasurement({ first: firstFeature, second: secondFeature, value: null });
+      });
+    return () => controller.abort();
+  }, [firstFeature, secondFeature]);
   const rows = [
     {
       label: "نوع",
@@ -81,7 +102,11 @@ export function FeatureComparison({ first, second }: { first: Inspection; second
           <dt className="text-[11px] text-muted-foreground">کمترین فاصلهٔ دو عارضه</dt>
           <dd className="mt-1.5 font-bold">
             <bdi dir="ltr">
-              {separation == null ? "محاسبه نشد" : format(separation * 1000, "m")}
+              {!ready
+                ? "در حال محاسبه…"
+                : separation == null
+                  ? "محاسبه نشد"
+                  : format(separation * 1000, "m")}
             </bdi>
             {separation === 0 && (
               <span className="ms-2 text-[10px] font-normal text-muted-foreground">

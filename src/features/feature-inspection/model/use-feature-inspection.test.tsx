@@ -13,7 +13,16 @@ import type { LayerSpecification, Map as MapLibreMap, MapMouseEvent } from "mapl
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FeatureInspectionPanel } from "../ui/feature-inspection-panel";
+import type { InspectionTask } from "./inspection-task";
 import { useFeatureInspection } from "./use-feature-inspection";
+
+vi.mock("./inspection-worker-client", () => ({
+  inspectInWorker: async (task: InspectionTask, signal: AbortSignal) => {
+    if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    const { runInspectionTask } = await import("./inspection-task");
+    return runInspectionTask(task);
+  },
+}));
 
 const { markers } = vi.hoisted(() => ({ markers: [] as FakeMarker[] }));
 class FakeMarker {
@@ -216,5 +225,31 @@ describe("two-feature inspection", () => {
     fireEvent.click(screen.getByRole("button", { name: /مختصات رأس/ }));
     fireEvent.click(await screen.findByRole("button", { name: "نمایش رأس 1" }));
     expect(markers.at(-1)!.setLngLat).toHaveBeenLastCalledWith([0, 0]);
+  });
+  it("renders only one page of vertices and selects the correct coordinate on later pages", async () => {
+    const original = features[0];
+    const ring = Array.from({ length: 120 }, (_, i) => [
+      0.0002 + -0.001 * Math.cos((i * Math.PI) / 60),
+      0.0002 + -0.001 * Math.sin((i * Math.PI) / 60),
+    ]);
+    ring.push(ring[0]);
+    features[0] = { ...original, geometry: { type: "Polygon", coordinates: [ring] } };
+    try {
+      const { mapRef, click } = fakeMap();
+      render(<FeatureInspectionPanel mapRef={mapRef} isMapReady />);
+      features[0].geometry.coordinates[0] = ring.map(([x, y]) => [x * 10, y * 10]);
+      click(0);
+      await screen.findByRole("button", { name: /مختصات رأس/ });
+      fireEvent.click(screen.getByRole("button", { name: /مختصات رأس/ }));
+      expect(await screen.findAllByRole("button", { name: /^نمایش رأس / })).toHaveLength(50);
+      fireEvent.click(screen.getByRole("button", { name: "بعدی" }));
+      fireEvent.click(await screen.findByRole("button", { name: "نمایش رأس 51" }));
+      expect(markers.at(-1)!.setLngLat).toHaveBeenLastCalledWith(
+        features[0].geometry.coordinates[0][50],
+      );
+    } finally {
+      cleanup();
+      features[0] = original;
+    }
   });
 });

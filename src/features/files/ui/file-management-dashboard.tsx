@@ -4,6 +4,7 @@ import type { FormEvent, ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCancelHealingMutation } from "@/features/topology";
+import { IssueDetails } from "@/features/topology/ui/issue-details";
 import { Popover } from "@base-ui/react/popover";
 import {
   AlertTriangle,
@@ -279,7 +280,7 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
                             className="gap-1.5"
                             onClick={() =>
                               navigate(
-                                `/map?healedFile=${encodeURIComponent(file.id)}&issue=${issueIndex}`,
+                                `/map?healedFile=${encodeURIComponent(file.id)}&issue=${issue.issueIndex ?? issueIndex}`,
                               )
                             }
                           >
@@ -293,6 +294,7 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
                 )}
             </section>
 
+            {file.report?.issueDetails?.paginated && <IssueDetails key={file.id} jobId={file.id} />}
             <section className="rounded-xl border border-border/60 p-4">
               <h3 className="text-sm font-bold">نتیجه ترمیم</h3>
               <p className="mt-1 text-xs text-muted-foreground">

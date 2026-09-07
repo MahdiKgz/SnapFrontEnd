@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -83,9 +83,11 @@ describe("MapWorkbench saved healed output", () => {
     );
 
     await waitFor(() => expect(loadHealedOutput).toHaveBeenCalledWith(`/heal/${fileId}/output`));
-    expect(loadOriginalInput).toHaveBeenCalledWith(fileId);
+    expect(loadOriginalInput).not.toHaveBeenCalled();
     await waitFor(() => expect(previewGeoJson).toHaveBeenCalledWith(healedOutput));
     expect(screen.getByRole("button", { name: "نمایش هندسه اصلی" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "نمایش هندسه اصلی" }));
+    await waitFor(() => expect(loadOriginalInput).toHaveBeenCalledWith(fileId));
     expect(screen.queryByTestId("review-panel")).toBeNull();
   });
 });

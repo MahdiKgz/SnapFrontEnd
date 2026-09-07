@@ -31,7 +31,7 @@ export const filesApi = topologyApi.injectEndpoints({
       ],
     }),
     getUserFile: builder.query<UserFileResponse<UserFileDetail>, string>({
-      query: (id) => `/files/${id}`,
+      query: (id) => `/files/${id}?report=compact`,
       providesTags: (_result, _error, id) => [{ type: "Files", id }],
     }),
     renameUserFile: builder.mutation<

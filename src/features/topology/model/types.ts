@@ -10,6 +10,7 @@ export interface TopologyIssueLocation {
 }
 
 export interface TopologyIssue {
+  issueIndex?: number;
   check: string;
   code: string;
   featureIndex: number;
@@ -64,6 +65,7 @@ export interface TopologyDryRunReport {
     spikeBaseToleranceMeters: number;
     maxCoordinateDecimalPlaces: number;
   };
+  issueDetails?: { paginated: boolean; total: number };
   issues: TopologyIssue[];
   checks: Record<string, unknown>;
 }

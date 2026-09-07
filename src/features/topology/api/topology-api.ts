@@ -7,6 +7,7 @@ import type {
   ManualReviewDecision,
   TopologyHealResponse,
   TopologyHealStatusResponse,
+  TopologyIssue,
   TopologyUploadResponse,
 } from "../model/types";
 
@@ -45,7 +46,7 @@ export const topologyApi = createApi({
   endpoints: (builder) => ({
     uploadTopology: builder.mutation<TopologyUploadResponse, FormData>({
       query: (formData) => ({
-        url: "/upload",
+        url: "/upload?report=compact",
         method: "POST",
         body: formData,
       }),
@@ -59,6 +60,24 @@ export const topologyApi = createApi({
         url: normalizeTopologyApiPath(path),
         method: "POST",
       }),
+    }),
+    getAnalysisIssues: builder.query<
+      {
+        success: boolean;
+        data: {
+          items: Array<TopologyIssue & { issueIndex: number }>;
+          total: number;
+          page: number;
+          limit: number;
+        };
+      },
+      { jobId: string; page: number; code?: string }
+    >({
+      query: ({ jobId, ...params }) => ({
+        url: `/heal/${encodeURIComponent(jobId)}/issues`,
+        params: { ...params, limit: 25 },
+      }),
+      keepUnusedDataFor: 10,
     }),
     getHealStatus: builder.query<TopologyHealStatusResponse, string>({
       query: (jobId) => `/heal/${jobId}`,
@@ -91,6 +110,7 @@ export const topologyApi = createApi({
 });
 
 export const {
+  useGetAnalysisIssuesQuery,
   useGetHealStatusQuery,
   useCancelHealingMutation,
   useHealTopologyMutation,
