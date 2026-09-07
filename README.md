@@ -116,3 +116,19 @@ export default defineConfig([
   },
 ]);
 ```
+
+
+## Basemap selector
+
+The bottom-left picker switches between OpenStreetMap and OpenFreeMap's Liberty
+style. Neither option needs an account, API key, billing setup, or environment
+configuration. OpenFreeMap uses OpenStreetMap data with a different vector style.
+Its public service permits commercial use: https://openfreemap.org/
+
+Only basemap sources/layers are changed. Uploaded geometries, camera position,
+measurement tools, and feature inspection remain intact. OpenFreeMap fonts and
+sprites are loaded with the style; provider credits come from its TileJSON through
+MapLibre's attribution control. The app keeps OSM visible until the alternate map
+loads, and falls back to OSM on an error or a 20-second loading timeout.
+
+Integration reference: https://openfreemap.org/quick_start/

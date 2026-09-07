@@ -8,11 +8,12 @@ import { SessionLoader } from "./session-loader";
 
 interface ProtectedRouteProps {
   children: ReactNode;
+  requiredRole?: string;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const location = useLocation();
-  const { accessToken, status } = useAppSelector((state) => state.auth);
+  const { accessToken, status, user } = useAppSelector((state) => state.auth);
 
   if (status === "checking") return <SessionLoader />;
 
@@ -24,6 +25,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (!isAuthenticated) {
     const from = `${location.pathname}${location.search}${location.hash}`;
     return <Navigate to="/login" replace state={{ from }} />;
+  }
+
+  if (requiredRole && !user?.roles.includes(requiredRole)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

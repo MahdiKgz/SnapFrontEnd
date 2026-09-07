@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import type { RefObject } from "react";
 
-import { getGeoJsonBounds, parseGeoFile } from "@/shared/lib/geo";
+import { getGeoJsonBounds } from "@/shared/lib/geo";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 
@@ -123,28 +123,10 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>, isMapReady:
     [displayGeoJson],
   );
 
-  const previewFile = useCallback(
-    async (file: File) => {
-      setPreviewError("");
-      setIsPreviewing(true);
-
-      try {
-        const geoJson = await parseGeoFile(file);
-        await displayGeoJson(geoJson);
-      } catch {
-        setPreviewError("نمایش فایل روی نقشه انجام نشد. ساختار داده مکانی را بررسی کنید.");
-      } finally {
-        setIsPreviewing(false);
-      }
-    },
-    [displayGeoJson],
-  );
-
   return {
     clearPreviewError: () => setPreviewError(""),
     isPreviewing,
     previewError,
-    previewFile,
     previewGeoJson,
     removePreview,
   };

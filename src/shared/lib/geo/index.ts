@@ -1,1 +1,1 @@
-export { getGeoJsonBounds, parseGeoFile } from "./geo-file";
+export { getGeoJsonBounds } from "./geo-file";

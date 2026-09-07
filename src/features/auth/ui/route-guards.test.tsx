@@ -37,17 +37,18 @@ function LoginDestination() {
   return <div>login:{(location.state as { from?: string } | null)?.from}</div>;
 }
 
-const renderProtectedRoute = (auth: AuthState) => {
+const renderProtectedRoute = (auth: AuthState, requiredRole?: string) => {
   const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth } });
   return render(
     <Provider store={store}>
       <MemoryRouter initialEntries={["/map?layer=roads#selected"]}>
         <Routes>
           <Route path="/login" element={<LoginDestination />} />
+          <Route path="/dashboard" element={<div>dashboard</div>} />
           <Route
             path="*"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole={requiredRole}>
                 <div>protected map</div>
               </ProtectedRoute>
             }
@@ -68,6 +69,20 @@ describe("authentication route guards", () => {
 
   it("renders protected content for a valid authenticated session", () => {
     renderProtectedRoute(authenticatedState);
+    expect(screen.getByText("protected map")).toBeTruthy();
+  });
+
+  it("redirects a non-admin who opens a management URL directly", () => {
+    renderProtectedRoute(authenticatedState, "admin");
+    expect(screen.getByText("dashboard")).toBeTruthy();
+    expect(screen.queryByText("protected map")).toBeNull();
+  });
+
+  it("allows an authenticated admin into management routes", () => {
+    renderProtectedRoute(
+      { ...authenticatedState, user: { ...user, roles: ["admin", "user"] } },
+      "admin",
+    );
     expect(screen.getByText("protected map")).toBeTruthy();
   });
 

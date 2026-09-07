@@ -37,7 +37,6 @@ vi.mock("@/features/map-preview", () => ({
     clearPreviewError: vi.fn(),
     isPreviewing: false,
     previewError: "",
-    previewFile: vi.fn(),
     previewGeoJson,
     removePreview: vi.fn(),
   }),

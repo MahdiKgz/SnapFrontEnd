@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { MapCanvas, useMapLibreMap } from "@/entities/map";
+import { BasemapPicker } from "@/features/basemap/ui/basemap-picker";
 import { FeatureInspectionPanel } from "@/features/feature-inspection/ui/feature-inspection-panel";
 import { useGetUserFileQuery } from "@/features/files";
 import { MapMeasurementTools } from "@/features/map-measurement/ui/map-measurement-tools";
@@ -28,14 +29,8 @@ import { ToolPlaceholder } from "./tool-placeholder";
 export function MapWorkbench() {
   const [searchParams] = useSearchParams();
   const { containerRef, isMapReady, mapRef } = useMapLibreMap();
-  const {
-    clearPreviewError,
-    isPreviewing,
-    previewError,
-    previewFile,
-    previewGeoJson,
-    removePreview,
-  } = useMapPreview(mapRef, isMapReady);
+  const { clearPreviewError, isPreviewing, previewError, previewGeoJson, removePreview } =
+    useMapPreview(mapRef, isMapReady);
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
@@ -151,6 +146,7 @@ export function MapWorkbench() {
   return (
     <div className="relative h-dvh min-h-[32rem] w-full overflow-hidden bg-background" dir="rtl">
       <MapCanvas containerRef={containerRef} />
+      <BasemapPicker mapRef={mapRef} isMapReady={isMapReady} />
       <PointerCoordinate isMapReady={isMapReady} mapRef={mapRef} />
       <MapMeasurementTools
         mapRef={mapRef}
@@ -227,7 +223,6 @@ export function MapWorkbench() {
             }}
             onSelectFeatures={setSelectedFeatureIndexes}
             previewError={previewError}
-            previewFile={previewFile}
             removePreview={removePreview}
             result={topologyResult}
           />

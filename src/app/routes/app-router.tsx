@@ -1,9 +1,10 @@
 import { ProtectedRoute } from "@/features/auth/ui/protected-route";
 import { PublicOnlyRoute } from "@/features/auth/ui/public-only-route";
 import MapPage from "@/pages/map";
-import { Navigate, createBrowserRouter } from "react-router-dom";
+import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
 
 import FilesPage from "../pages/dashboard/files";
+import { ManagementPlaceholder } from "../pages/dashboard/management-placeholder";
 import Overview from "../pages/dashboard/overview";
 import Home from "../pages/home";
 import BlogPage from "../pages/home/blog";
@@ -93,6 +94,20 @@ export const appRouter = createBrowserRouter([
       {
         path: "files",
         element: <FilesPage />,
+      },
+      {
+        path: "admin",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Outlet />
+          </ProtectedRoute>
+        ),
+        children: [
+          { index: true, element: <Navigate to="users" replace /> },
+          { path: "users", element: <ManagementPlaceholder title="مدیریت کاربران" /> },
+          { path: "plans", element: <ManagementPlaceholder title="مدیریت پلن‌ها" /> },
+          { path: "reports", element: <ManagementPlaceholder title="گزارش‌های مدیریتی" /> },
+        ],
       },
       {
         path: "map",

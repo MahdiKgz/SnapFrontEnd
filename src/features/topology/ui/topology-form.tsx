@@ -6,6 +6,7 @@ import { FileCode2, UploadCloud, X } from "lucide-react";
 
 import type { TopologyUploadData } from "../model/types";
 import { useTopologyUpload } from "../model/use-topology-upload";
+import { ShapefileHelp } from "./shapefile-help";
 import { TopologyResults } from "./topology-results";
 
 interface TopologyFormProps {
@@ -18,12 +19,11 @@ interface TopologyFormProps {
   ) => Promise<void> | void;
   onSelectFeatures: (featureIndexes: number[]) => void;
   previewError: string;
-  previewFile: (file: File) => Promise<void>;
   removePreview: () => void;
   result: TopologyUploadData | null;
 }
 
-const ACCEPTED_FILE_TYPES = ".json,.geojson,.kml,.kmz";
+const ACCEPTED_FILE_TYPES = ".json,.geojson,.kml,.kmz,.shp,.zip,.dwg,.dgn";
 
 export function TopologyForm({
   clearPreviewError,
@@ -33,11 +33,14 @@ export function TopologyForm({
   onHealingComplete,
   onSelectFeatures,
   previewError,
-  previewFile,
   removePreview,
   result,
 }: TopologyFormProps) {
   const {
+    changeSourceCrs,
+    sourceCrs,
+    isCad,
+    uploadError,
     changeName,
     changeTolerance,
     clearFile,
@@ -56,7 +59,6 @@ export function TopologyForm({
     clearPreviewError,
     onAnalysisComplete,
     onAnalysisReset,
-    previewFile,
     removePreview,
   });
 
@@ -122,7 +124,10 @@ export function TopologyForm({
       </div>
 
       <div className="mt-4 space-y-2">
-        <Label className="text-xs text-foreground">فایل (file)</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs text-foreground">فایل (file)</Label>
+          <ShapefileHelp />
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -173,7 +178,7 @@ export function TopologyForm({
             </span>
             <span className="text-xs font-semibold text-foreground">انتخاب یا رها کردن فایل</span>
             <span className="mt-1 text-[10px] text-muted-foreground" dir="ltr">
-              JSON, GeoJSON, KML, KMZ
+              JSON, GeoJSON, KML, KMZ, SHP, ZIP, DWG, DGN
             </span>
           </button>
         )}
@@ -184,9 +189,44 @@ export function TopologyForm({
         )}
       </div>
 
+      {isCad && (
+        <div className="mt-4 space-y-2">
+          <Label htmlFor="cad-source-crs" className="text-xs text-foreground">
+            سیستم مختصات فایل CAD
+          </Label>
+          <Input
+            id="cad-source-crs"
+            list="cad-crs-options"
+            value={sourceCrs}
+            onChange={(event) => changeSourceCrs(event.target.value)}
+            placeholder="EPSG:32639"
+            maxLength={12}
+            required
+            dir="ltr"
+            aria-describedby="cad-crs-help"
+            className="h-10 border-border bg-card/80 text-foreground"
+          />
+          <datalist id="cad-crs-options">
+            <option value="EPSG:32638">WGS84 / UTM 38N</option>
+            <option value="EPSG:32639">WGS84 / UTM 39N</option>
+            <option value="EPSG:32640">WGS84 / UTM 40N</option>
+            <option value="EPSG:32641">WGS84 / UTM 41N</option>
+            <option value="EPSG:4326">WGS84 — طول و عرض جغرافیایی</option>
+          </datalist>
+          <p id="cad-crs-help" className="text-[10px] leading-5 text-muted-foreground">
+            کد EPSG را از تنظیمات فایل یا تهیه‌کنندهٔ آن بگیرید. فایل با مختصات محلی ابتدا باید
+            زمین‌مرجع شود؛ انتخاب یک کد دلخواه باعث نتیجهٔ نادرست می‌شود.
+          </p>
+          <p className="text-[10px] leading-5 text-muted-foreground">
+            هندسه‌های بسته برای بررسی سطح و خطوط باز برای بررسی خطی تبدیل می‌شوند. خروجی ترمیم
+            GeoJSON است.
+          </p>
+        </div>
+      )}
+
       {isError && (
         <p role="alert" className="mt-4 text-[11px] leading-5 text-red-700 dark:text-red-400">
-          ارسال فرم انجام نشد. اتصال به سرویس آپلود را بررسی کنید.
+          {uploadError}
         </p>
       )}
 

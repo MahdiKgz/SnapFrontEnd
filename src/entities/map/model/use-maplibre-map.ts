@@ -20,6 +20,9 @@ export function useMapLibreMap() {
             type: "raster",
             tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
             tileSize: 256,
+            maxzoom: 19,
+            attribution:
+              '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
           },
         },
         layers: [
@@ -44,8 +47,6 @@ export function useMapLibreMap() {
     map.addControl(
       new maplibregl.AttributionControl({
         compact: true,
-        customAttribution:
-          '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
       }),
       "bottom-left",
     );

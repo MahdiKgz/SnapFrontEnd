@@ -11,9 +11,13 @@ const SOURCE_ID = "topology-affected-features";
 const SELECTED_SOURCE_ID = "topology-selected-feature";
 const FILL_LAYER_ID = "topology-affected-fill";
 const LINE_LAYER_ID = "topology-affected-line";
+const POINT_LAYER_ID = "topology-affected-points";
+const SELECTED_POINT_LAYER_ID = "topology-selected-points";
 const SELECTED_FILL_LAYER_ID = "topology-selected-fill";
 const SELECTED_LINE_LAYER_ID = "topology-selected-line";
 const LAYER_IDS = [
+  SELECTED_POINT_LAYER_ID,
+  POINT_LAYER_ID,
   SELECTED_LINE_LAYER_ID,
   SELECTED_FILL_LAYER_ID,
   LINE_LAYER_ID,
@@ -113,6 +117,21 @@ export function useTopologyResultsMap({
         });
       }
 
+      if (!map.getLayer(POINT_LAYER_ID)) {
+        map.addLayer({
+          id: POINT_LAYER_ID,
+          type: "circle",
+          source: SOURCE_ID,
+          filter: ["==", "$type", "Point"],
+          paint: {
+            "circle-color": "#ef4444",
+            "circle-radius": 6,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 2,
+          },
+        });
+      }
+
       if (!map.getSource(SELECTED_SOURCE_ID)) {
         map.addSource(SELECTED_SOURCE_ID, {
           type: "geojson",
@@ -135,6 +154,21 @@ export function useTopologyResultsMap({
         });
       }
 
+      if (!map.getLayer(SELECTED_POINT_LAYER_ID)) {
+        map.addLayer({
+          id: SELECTED_POINT_LAYER_ID,
+          type: "circle",
+          source: SELECTED_SOURCE_ID,
+          filter: ["==", "$type", "Point"],
+          paint: {
+            "circle-color": "#7f1d1d",
+            "circle-radius": 8,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 2,
+          },
+        });
+      }
+
       if (!map?.getLayer(SELECTED_LINE_LAYER_ID)) {
         map.addLayer({
           id: SELECTED_LINE_LAYER_ID,
@@ -150,6 +184,7 @@ export function useTopologyResultsMap({
     };
 
     showResults();
+    flyToFeatures(map, data);
 
     return () => {
       // Map removal already disposes its layers and sources.

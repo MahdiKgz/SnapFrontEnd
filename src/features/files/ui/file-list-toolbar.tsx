@@ -132,11 +132,13 @@ export function FileListToolbar({
                       onChange={(e) => setDraft({ ...draft, fileType: e.target.value })}
                     >
                       <option value="">همه</option>
-                      {["geojson", "json", "kml", "kmz", "shp", "zip"].map((value) => (
-                        <option key={value} value={value}>
-                          {value.toUpperCase()}
-                        </option>
-                      ))}
+                      {["geojson", "json", "kml", "kmz", "shp", "zip", "dwg", "dgn"].map(
+                        (value) => (
+                          <option key={value} value={value}>
+                            {value.toUpperCase()}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </label>
                   <label className="text-xs">

@@ -113,7 +113,7 @@ describe("map overlay lifecycle", () => {
     renderMapRoute();
     const firstMap = maps[0];
     act(() => firstMap.listeners.get("load")?.());
-    expect(firstMap.layers.size).toBe(8);
+    expect(firstMap.layers.size).toBe(10);
 
     fireEvent.click(screen.getByRole("link", { name: "Dashboard" }));
     expect(screen.getByRole("link", { name: "Return to map" })).toBeTruthy();
@@ -123,7 +123,7 @@ describe("map overlay lifecycle", () => {
     fireEvent.click(screen.getByRole("link", { name: "Return to map" }));
     const secondMap = maps[1];
     act(() => secondMap.listeners.get("load")?.());
-    expect(secondMap.layers.size).toBe(8);
+    expect(secondMap.layers.size).toBe(10);
     expect(secondMap.removed).toBe(false);
   });
 
@@ -131,17 +131,17 @@ describe("map overlay lifecycle", () => {
     renderMapRoute();
     const map = maps[0];
     act(() => map.listeners.get("load")?.());
-    expect(map.layers.size).toBe(8);
+    expect(map.layers.size).toBe(10);
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle overlays" }));
     expect(map.layers.size).toBe(0);
     expect(map.sources.size).toBe(0);
-    expect(map.removeLayer).toHaveBeenCalledTimes(8);
+    expect(map.removeLayer).toHaveBeenCalledTimes(10);
     expect(map.removeSource).toHaveBeenCalledTimes(4);
     expect(map.remove).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle overlays" }));
-    expect(map.layers.size).toBe(8);
+    expect(map.layers.size).toBe(10);
     expect(map.sources.size).toBe(4);
   });
 });

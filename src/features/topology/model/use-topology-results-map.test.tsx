@@ -94,6 +94,9 @@ describe("useTopologyResultsMap", () => {
       },
     );
 
+    expect(flyTo).toHaveBeenCalledOnce();
+    expect(layers.has("topology-affected-points")).toBe(true);
+    expect(layers.has("topology-selected-points")).toBe(true);
     rerender({ selectedFeatureIndexes: [5, 7] });
 
     const setSelectedData = sources.get("topology-selected-feature");
@@ -124,6 +127,8 @@ describe("useTopologyResultsMap", () => {
     const map = {
       addLayer,
       addSource,
+      cameraForBounds: vi.fn(() => ({ center: [52.5, 35.5], zoom: 12 })),
+      flyTo: vi.fn(),
       getLayer: (id: string) => (layers.has(id) ? { id } : undefined),
       getSource: (id: string) => {
         const setData = sources.get(id);
