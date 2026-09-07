@@ -3,6 +3,7 @@ import { useLogoutMutation } from "@/features/auth/api/auth-api";
 import { logout } from "@/features/auth/model/auth-slice";
 import { ThemeToggle } from "@/features/theme/ui/theme-toggle";
 import {
+  ArrowLeftRight,
   ChartNoAxesCombined,
   Layers,
   LayoutDashboard,
@@ -22,6 +23,7 @@ const NAVIGATION_SECTIONS = [
     items: [
       { path: "/dashboard", title: "پیشخوان", icon: LayoutDashboard },
       { path: "/dashboard/files", title: "مدیریت فایل‌ها", icon: Layers },
+      { path: "/dashboard/convert", title: "تبدیل فرمت و مختصات", icon: ArrowLeftRight },
       { path: "/map", title: "میز کار نقشه", icon: Map },
     ],
   },

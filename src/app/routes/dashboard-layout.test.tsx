@@ -38,7 +38,10 @@ describe("dashboard navigation by role", () => {
     (...roles) => {
       const nav = renderSidebar(roles);
       expect(nav.getByRole("heading", { name: "فضای کاری" })).toBeTruthy();
-      expect(nav.getAllByRole("link")).toHaveLength(3);
+      expect(nav.getAllByRole("link")).toHaveLength(4);
+      expect(nav.getByRole("link", { name: "تبدیل فرمت و مختصات" }).getAttribute("href")).toBe(
+        "/dashboard/convert",
+      );
       expect(nav.queryByRole("link", { name: "مدیریت کاربران" })).toBeNull();
       expect(nav.queryByRole("heading", { name: "مدیریت سامانه" })).toBeNull();
       expect(nav.queryByRole("heading", { name: "گزارش‌های مدیریتی" })).toBeNull();

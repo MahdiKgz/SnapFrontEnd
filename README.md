@@ -132,3 +132,21 @@ MapLibre's attribution control. The app keeps OSM visible until the alternate ma
 loads, and falls back to OSM on an error or a 20-second loading timeout.
 
 Integration reference: https://openfreemap.org/quick_start/
+
+## Format and CRS conversion
+
+`/dashboard/convert` is an authenticated utility linked from the workspace sidebar
+for all roles. Upload GeoJSON, a ZIP containing one Shapefile dataset, or DXF;
+choose an output format and optionally enter source/target EPSG codes. No file is
+parsed locally and the map/topology workflow is not involved.
+
+The page uses `/api/convert` with the same authenticated API base URL as the rest
+of the dashboard. Up to 5 MiB returns a downloadable attachment immediately;
+larger inputs (up to 250 MiB) return a job ID and use plain status polling followed
+by download. The server must run the conversion worker and existing GIS runtime.
+Errors and format-fidelity warnings are shown in Persian. DXF requires source CRS;
+Shapefile should include matching SHP/SHX/DBF/PRJ (and CPG for encoding). Leaving
+target format/CRS blank preserves them. KML/DWG/DGN are not part of this utility's
+initial conversion format set.
+
+The UI uses no payment service, map rendering, healing SSE, or manual-review UI.

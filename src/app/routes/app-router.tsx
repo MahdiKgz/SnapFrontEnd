@@ -1,5 +1,6 @@
 import { ProtectedRoute } from "@/features/auth/ui/protected-route";
 import { PublicOnlyRoute } from "@/features/auth/ui/public-only-route";
+import ConversionPage from "@/features/conversion/ui/conversion-page";
 import MapPage from "@/pages/map";
 import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
 
@@ -94,6 +95,10 @@ export const appRouter = createBrowserRouter([
       {
         path: "files",
         element: <FilesPage />,
+      },
+      {
+        path: "convert",
+        element: <ConversionPage />,
       },
       {
         path: "admin",
