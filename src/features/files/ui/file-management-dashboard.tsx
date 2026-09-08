@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { HealedExportButton } from "@/features/conversion/ui/healed-export-button";
 import { useCancelHealingMutation } from "@/features/topology";
 import { IssueDetails } from "@/features/topology/ui/issue-details";
 import { Popover } from "@base-ui/react/popover";
@@ -296,7 +297,10 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
 
             {file.report?.issueDetails?.paginated && <IssueDetails key={file.id} jobId={file.id} />}
             <section className="rounded-xl border border-border/60 p-4">
-              <h3 className="text-sm font-bold">نتیجه ترمیم</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-bold">نتیجه ترمیم</h3>
+                {file.isHealed && <HealedExportButton jobId={file.id} />}
+              </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 {file.isHealed
                   ? `ترمیم در ${formatDate(file.healing.completedAt)} تکمیل شده است.`

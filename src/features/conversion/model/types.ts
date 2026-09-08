@@ -59,6 +59,7 @@ export const conversionError = (error: unknown): string => {
     CONVERSION_DATA_LOSS: "تبدیل می‌تواند بخشی از داده را از بین ببرد؛ خروجی ناقص تحویل داده نشد.",
     CONVERSION_LIMIT_EXCEEDED: "اندازهٔ فایل، خروجی یا تعداد عارضه‌ها از ظرفیت ابزار بیشتر است.",
     CONVERSION_NO_GEOMETRY: "عارضهٔ قابل تبدیل در فایل پیدا نشد.",
+    CONVERSION_NOT_READY: "خروجی هنوز آماده نیست؛ پس از پایان پردازش دوباره تلاش کنید.",
     CONVERSION_QUEUE_UNAVAILABLE: "صف تبدیل موقتاً در دسترس نیست؛ کمی بعد دوباره تلاش کنید.",
     CONVERSION_RUNTIME_UNAVAILABLE: "سرویس تبدیل روی سرور آماده نیست. با مدیر سامانه تماس بگیرید.",
     CONVERSION_TIMEOUT: "زمان پردازش از حد مجاز گذشت؛ از فایل کوچک‌تری استفاده کنید.",

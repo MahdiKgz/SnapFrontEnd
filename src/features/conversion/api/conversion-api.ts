@@ -4,7 +4,12 @@ import {
 } from "@/features/auth/api/auth-base-query";
 import { createApi } from "@reduxjs/toolkit/query/react";
 
-import type { ConversionDownload, ConversionJobResponse, ConversionReport } from "../model/types";
+import type {
+  ConversionDownload,
+  ConversionFormat,
+  ConversionJobResponse,
+  ConversionReport,
+} from "../model/types";
 
 export async function readConversionResponse(response: Response) {
   if (!response.ok || response.status === 202) return response.json();
@@ -33,6 +38,17 @@ export const conversionApi = createApi({
   reducerPath: "conversionApi",
   baseQuery: createReauthenticatingBaseQuery(AUTH_API_BASE_URL),
   endpoints: (builder) => ({
+    exportHealed: builder.mutation<
+      ConversionDownload | ConversionJobResponse,
+      { jobId: string; targetFormat: ConversionFormat; targetCRS: string }
+    >({
+      query: ({ jobId, ...body }) => ({
+        url: `/heal/${encodeURIComponent(jobId)}/export`,
+        method: "POST",
+        body,
+        responseHandler: readConversionResponse,
+      }),
+    }),
     convertFile: builder.mutation<ConversionDownload | ConversionJobResponse, FormData>({
       query: (body) => ({
         url: "/convert",
@@ -54,6 +70,7 @@ export const conversionApi = createApi({
   }),
 });
 export const {
+  useExportHealedMutation,
   useConvertFileMutation,
   useGetConversionStatusQuery,
   useDownloadConversionMutation,

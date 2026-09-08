@@ -29,9 +29,21 @@ const healingSyncSlice = createSlice({
   reducers: {
     trackHealingJob(
       state,
-      action: PayloadAction<{ id: string; name?: string; status: TopologyHealStatus }>,
+      action: PayloadAction<{
+        id: string;
+        name?: string;
+        status: TopologyHealStatus;
+        restart?: boolean;
+      }>,
     ) {
       const current = state.jobs[action.payload.id];
+      if (
+        current &&
+        ["completed", "failed", "cancelled"].includes(current.status) &&
+        ["queued", "processing"].includes(action.payload.status) &&
+        !action.payload.restart
+      )
+        return;
       state.jobs[action.payload.id] = {
         id: action.payload.id,
         name: action.payload.name ?? current?.name ?? action.payload.id,
@@ -54,6 +66,7 @@ const healingSyncSlice = createSlice({
         current?.status === "completed" ||
         current?.status === "failed" ||
         current?.status === "cancelled";
+      if (wasTerminal && !["completed", "failed", "cancelled"].includes(lifecycle.status)) return;
       state.jobs[id] = {
         id,
         name: jobName ?? current?.name ?? id,

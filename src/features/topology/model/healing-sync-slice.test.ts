@@ -50,4 +50,19 @@ describe("healing sync state", () => {
     state = reducer(state, dismissHealingNotification(state.notifications[0]!.id));
     expect(state.notifications).toHaveLength(0);
   });
+  it("ignores stale processing events and file-list discovery after completion, but allows explicit retry", () => {
+    let state = reducer(
+      undefined,
+      receiveHealingEvent({ eventId: "9", lifecycle: lifecycle("completed") }),
+    );
+    state = reducer(
+      state,
+      receiveHealingEvent({ eventId: "8", lifecycle: lifecycle("processing") }),
+    );
+    state = reducer(state, trackHealingJob({ id: "job-1", status: "processing" }));
+    expect(state.jobs["job-1"].status).toBe("completed");
+    expect(state.notifications).toHaveLength(1);
+    state = reducer(state, trackHealingJob({ id: "job-1", status: "queued", restart: true }));
+    expect(state.jobs["job-1"].status).toBe("queued");
+  });
 });

@@ -3,13 +3,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 
-import { streamHealingEvents } from "../api/heal-events";
+import { readHealingStatus } from "../api/read-healing-status";
 import {
   buildTopologyApiUrl,
+  topologyApi,
   useCancelHealingMutation,
   useHealTopologyMutation,
   useLazyGetHealedOutputQuery,
 } from "../api/topology-api";
+import { watchHealingJob } from "../api/watch-healing-job";
 import { receiveHealingEvent, trackHealingJob } from "./healing-sync-slice";
 import type { TopologyHealStatusData, TopologyUploadData } from "./types";
 
@@ -34,9 +36,29 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
   const [outputApplicationError, setOutputApplicationError] = useState(false);
   const loadedOutputJobId = useRef<string | null>(null);
   const lastEventId = useRef<string | null>(null);
+  const completionCallback = useRef(onHealingComplete);
+  const active = useRef(false);
+  const appliedLifecycle = useRef<TopologyHealStatusData | null>(null);
+  useEffect(() => {
+    completionCallback.current = onHealingComplete;
+  }, [onHealingComplete]);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
 
   const applyLifecycle = useCallback(
     async (next: TopologyHealStatusData) => {
+      if (!active.current) return;
+      if (
+        appliedLifecycle.current &&
+        ["completed", "failed", "cancelled"].includes(appliedLifecycle.current.status) &&
+        !["completed", "failed", "cancelled"].includes(next.status)
+      )
+        return;
+      appliedLifecycle.current = next;
       setLifecycle(next);
       if (next.status === "failed" || next.status === "cancelled") {
         setIsStreaming(false);
@@ -51,67 +73,51 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
       setOutputApplicationError(false);
       try {
         const output = await loadHealedOutput(previewPath).unwrap();
-        await onHealingComplete(output);
-        setIsOutputReady(true);
+        if (!active.current) return;
+        await completionCallback.current(output);
+        if (active.current) setIsOutputReady(true);
       } catch {
+        if (!active.current) return;
         loadedOutputJobId.current = null;
         setOutputApplicationError(true);
       }
     },
-    [loadHealedOutput, onHealingComplete],
+    [loadHealedOutput],
   );
 
   useEffect(() => {
-    if (!isStreaming) return;
-    if (!accessToken) {
-      setStreamError(true);
-      setIsStreaming(false);
-      return;
-    }
+    // Keep the pending job tracked while authentication refreshes; resume with the new token.
+    if (!isStreaming || !accessToken) return;
 
     const abortController = new AbortController();
-    let reconnectTimer: number | null = null;
-    let stopped = false;
-
-    const connect = async (): Promise<void> => {
-      let terminalEventReceived = false;
-      try {
-        await streamHealingEvents({
-          accessToken,
-          lastEventId: lastEventId.current,
-          onEvent: (event) => {
-            if (event.id) lastEventId.current = event.id;
-            setStreamError(false);
-            terminalEventReceived = ["completed", "failed", "cancelled"].includes(
-              event.data.status,
-            );
-            dispatch(
-              receiveHealingEvent({
-                eventId: event.id,
-                jobName: data.name,
-                lifecycle: event.data,
-              }),
-            );
-            void applyLifecycle(event.data);
-          },
-          signal: abortController.signal,
-          url: buildTopologyApiUrl(`/heal/${data.jobId}/events`),
-        });
-      } catch (error) {
-        if (abortController.signal.aborted) return;
-        setStreamError(true);
-      }
-
-      if (!stopped && !terminalEventReceived && !abortController.signal.aborted) {
-        reconnectTimer = window.setTimeout(() => void connect(), 2_000);
-      }
-    };
-
-    void connect();
+    const cleanup = watchHealingJob({
+      jobId: data.jobId,
+      accessToken,
+      lastEventId: lastEventId.current,
+      signal: abortController.signal,
+      url: buildTopologyApiUrl(`/heal/${data.jobId}/events`),
+      readStatus: (signal) => readHealingStatus(dispatch, data.jobId, signal),
+      onError: setStreamError,
+      onEvent: (event) => {
+        if (event.id) lastEventId.current = event.id;
+        dispatch(
+          receiveHealingEvent({ eventId: event.id, jobName: data.name, lifecycle: event.data }),
+        );
+        if (["completed", "failed", "cancelled"].includes(event.data.status)) {
+          dispatch(
+            topologyApi.util.invalidateTags([
+              { type: "Files", id: data.jobId },
+              { type: "Files", id: "LIST" },
+              { type: "Files", id: "SUMMARY" },
+            ]),
+          );
+        }
+        void applyLifecycle(event.data);
+      },
+    });
     return () => {
-      stopped = true;
       abortController.abort();
-      if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+      cleanup();
     };
   }, [accessToken, applyLifecycle, data.jobId, data.name, dispatch, isStreaming]);
 
@@ -121,9 +127,18 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
     setIsOutputReady(false);
     setOutputApplicationError(false);
     lastEventId.current = null;
+    appliedLifecycle.current = null;
+    loadedOutputJobId.current = null;
     try {
       const response = await healTopology(data.heal.path).unwrap();
-      dispatch(trackHealingJob({ id: data.jobId, name: data.name, status: response.data.status }));
+      dispatch(
+        trackHealingJob({
+          id: data.jobId,
+          name: data.name,
+          status: response.data.status,
+          restart: true,
+        }),
+      );
       await applyLifecycle(response.data);
       if (response.data.status === "queued" || response.data.status === "processing") {
         setIsStreaming(true);
@@ -165,7 +180,7 @@ export function useTopologyHealing({ data, onHealingComplete }: UseTopologyHeali
     lifecycle,
     requestError,
     requestHealing,
-    statusError: streamError,
+    statusError: streamError || (isStreaming && !accessToken),
     outputError: outputRequest.isError || outputApplicationError,
   };
 }

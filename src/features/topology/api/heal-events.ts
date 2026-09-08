@@ -80,17 +80,25 @@ export const streamHealingEvents = async ({
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (!signal.aborted) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value, { stream: !done }).replace(/\r\n/g, "\n");
-    let boundary = buffer.indexOf("\n\n");
-    while (boundary !== -1) {
-      const block = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
-      const event = parseHealingSseBlock(block);
-      if (event) onEvent(event);
-      boundary = buffer.indexOf("\n\n");
+  try {
+    while (!signal.aborted) {
+      const { done, value } = await reader.read();
+      buffer = (buffer + decoder.decode(value, { stream: !done })).replace(/\r\n/g, "\n");
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary !== -1) {
+        const block = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        const event = parseHealingSseBlock(block);
+        if (event) onEvent(event);
+        boundary = buffer.indexOf("\n\n");
+      }
+      if (done) {
+        const finalEvent = parseHealingSseBlock(buffer);
+        if (finalEvent && !signal.aborted) onEvent(finalEvent);
+        break;
+      }
     }
-    if (done) break;
+  } finally {
+    reader.releaseLock();
   }
 };

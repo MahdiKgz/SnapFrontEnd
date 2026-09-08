@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { parseHealingSseBlock } from "./heal-events";
+import { parseHealingSseBlock, streamHealingEvents } from "./heal-events";
 
 describe("healing SSE parser", () => {
   it("ignores heartbeats and parses lifecycle events with their event id", () => {
@@ -29,4 +29,40 @@ describe("healing SSE parser", () => {
     expect(parseHealingSseBlock("event: stream-error\ndata: {}")).toBeNull();
     expect(parseHealingSseBlock("event: completed\ndata: not-json")).toBeNull();
   });
+});
+
+afterEach(() => vi.unstubAllGlobals());
+it("handles CRLF boundaries split between network chunks and a final event at EOF", async () => {
+  const encoder = new TextEncoder();
+  const chunks = [
+    "event: progress\r",
+    '\ndata: {"status":"processing","progress":40}\r',
+    "\n\r",
+    '\nevent: completed\r\ndata: {"status":"completed","progress":100}',
+  ];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              chunks.forEach((chunk) => controller.enqueue(encoder.encode(chunk)));
+              controller.close();
+            },
+          }),
+        ),
+    ),
+  );
+  const onEvent = vi.fn();
+  await streamHealingEvents({
+    accessToken: "token",
+    url: "/events",
+    signal: new AbortController().signal,
+    onEvent,
+  });
+  expect(onEvent.mock.calls.map(([event]) => event.data.status)).toEqual([
+    "processing",
+    "completed",
+  ]);
 });

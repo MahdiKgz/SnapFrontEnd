@@ -5,22 +5,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TopologyUploadData } from "../model/types";
 import { TopologyResults } from "./topology-results";
 
-const { cancelTopology, healTopology, loadHealedOutput, streamHealingEvents } = vi.hoisted(() => ({
-  cancelTopology: vi.fn(),
-  healTopology: vi.fn(),
-  loadHealedOutput: vi.fn(),
-  streamHealingEvents: vi.fn(),
-}));
+const { cancelTopology, healTopology, loadHealedOutput, streamHealingEvents, dispatch } =
+  vi.hoisted(() => ({
+    dispatch: vi.fn(),
+    cancelTopology: vi.fn(),
+    healTopology: vi.fn(),
+    loadHealedOutput: vi.fn(),
+    streamHealingEvents: vi.fn(),
+  }));
 
 vi.mock("@/app/store/hooks", () => ({
-  useAppDispatch: () => vi.fn(),
+  useAppDispatch: () => dispatch,
   useAppSelector: (selector: (state: { auth: { accessToken: string } }) => unknown) =>
     selector({ auth: { accessToken: "test-access-token" } }),
 }));
 
 vi.mock("../api/heal-events", () => ({ streamHealingEvents }));
+vi.mock("../api/read-healing-status", () => ({
+  readHealingStatus: vi.fn(async () => queuedLifecycle),
+}));
 
 vi.mock("../api/topology-api", () => ({
+  topologyApi: { util: { invalidateTags: vi.fn(() => ({ type: "invalidate" })) } },
   TOPOLOGY_API_BASE_URL: "http://localhost:3000",
   buildTopologyApiUrl: (path: string) => `http://localhost:3000${path}`,
   useCancelHealingMutation: () => [cancelTopology, { isLoading: false }],
@@ -255,8 +261,7 @@ describe("TopologyResults", () => {
     );
     expect(loadHealedOutput).toHaveBeenCalledWith("/heal/job-123/output");
     expect(screen.getByText("ترمیم فایل با موفقیت کامل شد.")).toBeTruthy();
-    const download = screen.getByRole("link", { name: "دانلود فایل ترمیم‌شده" });
-    expect(download.getAttribute("href")).toBe("http://localhost:3000/heal/job-123/download");
+    expect(screen.getByRole("button", { name: "دانلود فایل ترمیم‌شده" })).toBeTruthy();
   });
 
   it("renders streamed stage progress and live topology counters", async () => {

@@ -1,11 +1,11 @@
 import { useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
+import { HealedExportButton } from "@/features/conversion/ui/healed-export-button";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import {
   AlertCircle,
   CheckCircle2,
-  Download,
   FilePlus2,
   FileSearch,
   LoaderCircle,
@@ -292,14 +292,10 @@ export function TopologyResults({
             </div>
           </div>
           {downloadUrl && (
-            <a
-              href={downloadUrl}
-              download={lifecycle.result?.output?.fileName}
+            <HealedExportButton
+              jobId={data.jobId}
               className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 font-bold text-white transition-colors hover:bg-emerald-400"
-            >
-              <Download className="size-4" />
-              دانلود فایل ترمیم‌شده
-            </a>
+            />
           )}
         </div>
       )}

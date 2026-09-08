@@ -4,8 +4,9 @@ import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { filesApi, useGetUserFilesQuery } from "@/features/files/api/files-api";
 import { CheckCircle2, CircleX, Info, X } from "lucide-react";
 
-import { streamHealingEvents } from "../api/heal-events";
+import { readHealingStatus } from "../api/read-healing-status";
 import { buildTopologyApiUrl, topologyApi } from "../api/topology-api";
+import { watchHealingJob } from "../api/watch-healing-job";
 import {
   dismissHealingNotification,
   receiveHealingEvent,
@@ -70,50 +71,38 @@ export function HealingSyncManager() {
       const controller = new AbortController();
       connections.current.set(jobId, controller);
       const job = jobs[jobId]!;
-      let lastEventId = job.lastEventId;
-
-      const connect = async (): Promise<void> => {
-        try {
-          await streamHealingEvents({
-            accessToken,
-            lastEventId,
-            onEvent: (event) => {
-              lastEventId = event.id ?? lastEventId;
-              dispatch(
-                receiveHealingEvent({
-                  eventId: event.id,
-                  jobName: job.name,
-                  lifecycle: event.data,
-                }),
-              );
-              if (["completed", "failed", "cancelled"].includes(event.data.status)) {
-                dispatch(
-                  topologyApi.util.invalidateTags([
-                    { type: "Files", id: jobId },
-                    { type: "Files", id: "LIST" },
-                    { type: "Files", id: "SUMMARY" },
-                  ]),
-                );
-              }
-            },
-            signal: controller.signal,
-            url: buildTopologyApiUrl(`/heal/${jobId}/events`),
-          });
-        } catch {
-          // A short reconnect loop handles transient proxy/network failures.
-        }
-        if (!controller.signal.aborted) {
-          window.setTimeout(() => void connect(), 2_000);
-        }
-      };
-      void connect();
+      watchHealingJob({
+        jobId,
+        accessToken,
+        lastEventId: job.lastEventId,
+        signal: controller.signal,
+        url: buildTopologyApiUrl(`/heal/${jobId}/events`),
+        readStatus: (signal) => readHealingStatus(dispatch, jobId, signal),
+        onEvent: (event) => {
+          dispatch(
+            receiveHealingEvent({ eventId: event.id, jobName: job.name, lifecycle: event.data }),
+          );
+          if (["completed", "failed", "cancelled"].includes(event.data.status)) {
+            dispatch(
+              topologyApi.util.invalidateTags([
+                { type: "Files", id: jobId },
+                { type: "Files", id: "LIST" },
+                { type: "Files", id: "SUMMARY" },
+              ]),
+            );
+          }
+        },
+      });
     }
   }, [accessToken, dispatch, jobs]);
 
-  useEffect(() => () => {
-    for (const controller of connections.current.values()) controller.abort();
-    connections.current.clear();
-  });
+  useEffect(
+    () => () => {
+      for (const controller of connections.current.values()) controller.abort();
+      connections.current.clear();
+    },
+    [accessToken],
+  );
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-5 z-80 mx-auto flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-2">
