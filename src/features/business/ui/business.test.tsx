@@ -111,24 +111,20 @@ async function lookupPerson() {
   fireEvent.click(screen.getByRole("button", { name: "بررسی" }));
   await screen.findByRole("article", { name: "مشخصات همکار" });
 }
-it.each(["invite", "direct"])(
-  "shows identity before confirming the %s membership mode",
-  async (mode) => {
-    const success = vi.fn();
-    render(<AddColleagueDialog disabled={false} onSuccess={success} />);
-    await lookupPerson();
-    expect(mocks.lookup).toHaveBeenCalledWith(person.phone);
-    expect(mocks.add).not.toHaveBeenCalled();
-    if (mode === "direct") fireEvent.click(screen.getByRole("radio", { name: /افزودن مستقیم/ }));
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: mode === "direct" ? "تأیید مشخصات و افزودن همکار" : "تأیید مشخصات و ارسال دعوت",
-      }),
-    );
-    await waitFor(() => expect(mocks.add).toHaveBeenCalledWith({ userId: person.id, mode }));
-    await waitFor(() => expect(success).toHaveBeenCalledOnce());
-  },
-);
+it("reviews identity and sends only an invitation without a direct-add option", async () => {
+  const success = vi.fn();
+  render(<AddColleagueDialog disabled={false} onSuccess={success} />);
+  await lookupPerson();
+  expect(mocks.lookup).toHaveBeenCalledWith(person.phone);
+  expect(mocks.add).not.toHaveBeenCalled();
+  expect(screen.queryByText("افزودن مستقیم")).toBeNull();
+  expect(screen.queryByRole("radio")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "تأیید مشخصات و ارسال دعوت" }));
+  await waitFor(() => expect(mocks.add).toHaveBeenCalledWith({ userId: person.id }));
+  await waitFor(() =>
+    expect(success).toHaveBeenCalledWith("دعوت در حساب همکار ثبت شد و در انتظار پاسخ است."),
+  );
+});
 it("invalidates the reviewed identity when the phone changes", async () => {
   render(<AddColleagueDialog disabled={false} onSuccess={vi.fn()} />);
   await lookupPerson();

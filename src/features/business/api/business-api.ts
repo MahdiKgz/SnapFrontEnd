@@ -30,10 +30,7 @@ export const businessApi = enhanced.injectEndpoints({
     lookupColleague: builder.mutation<Envelope<Person>, string>({
       query: (phone) => ({ url: "/business/company/lookup", method: "POST", body: { phone } }),
     }),
-    addColleague: builder.mutation<
-      Envelope<{ mode: string; id: string }>,
-      { userId: string; mode: "direct" | "invite" }
-    >({
+    addColleague: builder.mutation<Envelope<{ mode: "invite"; id: string }>, { userId: string }>({
       query: (body) => ({ url: "/business/company/members", method: "POST", body }),
       invalidatesTags: ["Business"],
     }),

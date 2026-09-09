@@ -35,7 +35,7 @@ export function AddColleagueDialog({
             </Dialog.Close>
           </div>
           <Dialog.Description className="mt-2 text-xs leading-6 text-muted-foreground">
-            شمارهٔ حساب ثبت‌شدهٔ همکار را وارد کنید و پس از بررسی مشخصات، روش عضویت را انتخاب کنید.
+            شمارهٔ حساب ثبت‌شدهٔ همکار را وارد کنید و پس از بررسی مشخصات، برایش دعوت بفرستید.
           </Dialog.Description>
           {open && (
             <ColleagueForm
@@ -53,7 +53,6 @@ export function AddColleagueDialog({
 function ColleagueForm({ onDone }: { onDone: (message: string) => void }) {
   const [phone, setPhone] = useState("");
   const [person, setPerson] = useState<Person | null>(null);
-  const [mode, setMode] = useState<"direct" | "invite">("invite");
   const [error, setError] = useState("");
   const [lookup, finding] = useLookupColleagueMutation();
   const [add, adding] = useAddColleagueMutation();
@@ -84,12 +83,8 @@ function ColleagueForm({ onDone }: { onDone: (message: string) => void }) {
     if (!person) return;
     setError("");
     try {
-      await add({ userId: person.id, mode }).unwrap();
-      onDone(
-        mode === "direct"
-          ? "همکار به شرکت اضافه شد."
-          : "دعوت در حساب همکار ثبت شد و در انتظار پاسخ است.",
-      );
+      await add({ userId: person.id }).unwrap();
+      onDone("دعوت در حساب همکار ثبت شد و در انتظار پاسخ است.");
     } catch (failure) {
       setError(businessError(failure));
     }
@@ -145,41 +140,10 @@ function ColleagueForm({ onDone }: { onDone: (message: string) => void }) {
               عضو سامانه از {new Date(person.createdAt).toLocaleDateString("fa-IR")}
             </p>
           </article>
-          <fieldset disabled={adding.isLoading} className="space-y-2">
-            <legend className="mb-2 text-xs font-semibold">روش افزودن</legend>
-            <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border p-3 text-sm">
-              <input
-                type="radio"
-                name="member-mode"
-                value="invite"
-                checked={mode === "invite"}
-                onChange={() => setMode("invite")}
-                className="mt-1 accent-primary"
-              />
-              <span>
-                دعوت با تأیید همکار
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                  دعوت در پنل خودش نمایش داده می‌شود؛ ظرفیت تا ۷ روز رزرو می‌ماند.
-                </span>
-              </span>
-            </label>
-            <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border p-3 text-sm">
-              <input
-                type="radio"
-                name="member-mode"
-                value="direct"
-                checked={mode === "direct"}
-                onChange={() => setMode("direct")}
-                className="mt-1 accent-primary"
-              />
-              <span>
-                افزودن مستقیم
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                  با تأیید شما، عضویت بلافاصله فعال می‌شود.
-                </span>
-              </span>
-            </label>
-          </fieldset>
+          <p className="rounded-xl border border-border p-3 text-sm leading-7">
+            عضویت فقط با پذیرش دعوت توسط خود همکار فعال می‌شود. دعوت در پنل او نمایش داده می‌شود و
+            ظرفیت تا ۷ روز رزرو می‌ماند.
+          </p>
           <p className="text-xs leading-6 text-muted-foreground">
             آمار فعالیت‌های پس از عضویت با شرکت به اشتراک گذاشته می‌شود. فایل‌های شخصی قبلی در آمار
             شرکت نمی‌آیند.
@@ -190,7 +154,7 @@ function ColleagueForm({ onDone }: { onDone: (message: string) => void }) {
             onClick={() => void confirm()}
           >
             {adding.isLoading && <LoaderCircle className="size-4 animate-spin" />}
-            {mode === "invite" ? "تأیید مشخصات و ارسال دعوت" : "تأیید مشخصات و افزودن همکار"}
+            تأیید مشخصات و ارسال دعوت
           </Button>
         </>
       )}
