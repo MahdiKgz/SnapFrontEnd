@@ -122,7 +122,7 @@ export function DashboardOverview() {
                 <p className="text-xs text-muted-foreground">طرح فعلی شما</p>
                 <h2 className="mt-1 text-2xl font-black">{summary.plan.name}</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  تمام قابلیت‌های فعلی SnapGIS برای شما فعال است.
+                  اطلاعات پلن و همکاری‌های شرکتی را در بخش «پلن و شرکت» ببینید.
                 </p>
               </div>
             </div>
@@ -139,6 +139,13 @@ export function DashboardOverview() {
             </div>
           </div>
         </section>
+
+        <Link
+          to="/dashboard/company"
+          className="inline-flex text-sm font-semibold text-primary hover:underline"
+        >
+          مدیریت پلن، شرکت و دعوت‌های همکاری
+        </Link>
 
         <section className="grid gap-4 md:grid-cols-3">
           <MetricCard

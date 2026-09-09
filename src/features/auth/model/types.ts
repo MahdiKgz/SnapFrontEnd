@@ -4,6 +4,7 @@ export interface AuthUser {
   phone: string;
   roles: string[];
   createdAt?: string;
+  planCode?: "starter" | "pro" | "advanced";
 }
 
 export interface AuthCredentials {

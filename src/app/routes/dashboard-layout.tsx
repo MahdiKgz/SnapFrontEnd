@@ -1,9 +1,11 @@
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { useLogoutMutation } from "@/features/auth/api/auth-api";
 import { logout } from "@/features/auth/model/auth-slice";
+import { useGetBusinessContextQuery } from "@/features/business/api/business-api";
 import { ThemeToggle } from "@/features/theme/ui/theme-toggle";
 import {
   ArrowLeftRight,
+  Building2,
   ChartNoAxesCombined,
   Layers,
   LayoutDashboard,
@@ -25,6 +27,7 @@ const NAVIGATION_SECTIONS = [
       { path: "/dashboard/files", title: "مدیریت فایل‌ها", icon: Layers },
       { path: "/dashboard/convert", title: "تبدیل فرمت و مختصات", icon: ArrowLeftRight },
       { path: "/map", title: "میز کار نقشه", icon: Map },
+      { path: "/dashboard/company", title: "پلن و شرکت", icon: Building2 },
     ],
   },
   {
@@ -50,6 +53,12 @@ export function DashboardLayout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
+  const business = useGetBusinessContextQuery(undefined, {
+    pollingInterval: 30000,
+    skipPollingIfUnfocused: true,
+    refetchOnMountOrArgChange: true,
+  });
+  const invitations = business.data?.data.invitations.length ?? 0;
   const isAdmin = user?.roles.includes("admin") ?? false;
   const [revokeSession, { isLoading: isLoggingOut }] = useLogoutMutation();
 
@@ -106,6 +115,14 @@ export function DashboardLayout() {
                         >
                           <item.icon className="size-4 shrink-0" aria-hidden="true" />
                           <span>{item.title}</span>
+                          {item.path === "/dashboard/company" && invitations > 0 && (
+                            <span
+                              aria-label={`${invitations.toLocaleString("fa-IR")} دعوت همکاری`}
+                              className="mr-auto rounded-full bg-sidebar-primary/15 px-1.5 text-xs font-bold"
+                            >
+                              {invitations.toLocaleString("fa-IR")}
+                            </span>
+                          )}
                         </NavLink>
                       </li>
                     ))}

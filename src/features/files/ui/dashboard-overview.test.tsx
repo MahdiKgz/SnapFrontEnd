@@ -13,8 +13,8 @@ vi.mock("../api/files-api", () => ({
       success: true,
       data: {
         plan: {
-          code: "free",
-          name: "رایگان",
+          code: "starter",
+          name: "پایه (استارتاپ)",
           expiresAt: null,
           remainingDays: null,
         },
@@ -38,18 +38,16 @@ describe("DashboardOverview", () => {
     );
 
     expect(screen.getByRole("heading", { name: "پیشخوان" })).toBeTruthy();
-    expect(screen.getByText("رایگان")).toBeTruthy();
+    expect(screen.getByText("پایه (استارتاپ)")).toBeTruthy();
     expect(screen.getByText("بدون محدودیت زمانی")).toBeTruthy();
     expect(screen.getByText("۷")).toBeTruthy();
     expect(screen.getByText("۲۴")).toBeTruthy();
     expect(screen.getByText("۱۸")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /مدیریت فایل‌ها/ }).getAttribute("href")).toBe(
+      "/dashboard/files",
+    );
     expect(
-      screen.getByRole("link", { name: /مدیریت فایل‌ها/ }).getAttribute("href"),
-    ).toBe("/dashboard/files");
-    expect(
-      screen
-        .getByRole("progressbar", { name: "نرخ ترمیم خطاها" })
-        .getAttribute("aria-valuenow"),
+      screen.getByRole("progressbar", { name: "نرخ ترمیم خطاها" }).getAttribute("aria-valuenow"),
     ).toBe("75");
   });
 });

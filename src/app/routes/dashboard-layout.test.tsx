@@ -11,6 +11,9 @@ import { DashboardLayout } from "./dashboard-layout";
 vi.mock("@/features/auth/api/auth-api", () => ({
   useLogoutMutation: () => [vi.fn(), { isLoading: false }],
 }));
+vi.mock("@/features/business/api/business-api", () => ({
+  useGetBusinessContextQuery: () => ({ data: { data: { invitations: [{ id: "invitation" }] } } }),
+}));
 vi.mock("@/features/theme/ui/theme-toggle", () => ({ ThemeToggle: () => <button>تم</button> }));
 
 function renderSidebar(roles: string[]) {
@@ -38,7 +41,8 @@ describe("dashboard navigation by role", () => {
     (...roles) => {
       const nav = renderSidebar(roles);
       expect(nav.getByRole("heading", { name: "فضای کاری" })).toBeTruthy();
-      expect(nav.getAllByRole("link")).toHaveLength(4);
+      expect(nav.getAllByRole("link")).toHaveLength(5);
+      expect(nav.getByLabelText("۱ دعوت همکاری")).toBeTruthy();
       expect(nav.getByRole("link", { name: "تبدیل فرمت و مختصات" }).getAttribute("href")).toBe(
         "/dashboard/convert",
       );

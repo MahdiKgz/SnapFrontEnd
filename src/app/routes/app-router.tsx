@@ -1,5 +1,7 @@
 import { ProtectedRoute } from "@/features/auth/ui/protected-route";
 import { PublicOnlyRoute } from "@/features/auth/ui/public-only-route";
+import AdminPlansPage from "@/features/business/ui/admin-plans-page";
+import CompanyPage from "@/features/business/ui/company-page";
 import ConversionPage from "@/features/conversion/ui/conversion-page";
 import MapPage from "@/pages/map";
 import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
@@ -96,6 +98,7 @@ export const appRouter = createBrowserRouter([
         path: "files",
         element: <FilesPage />,
       },
+      { path: "company", element: <CompanyPage /> },
       {
         path: "convert",
         element: <ConversionPage />,
@@ -110,7 +113,7 @@ export const appRouter = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="users" replace /> },
           { path: "users", element: <ManagementPlaceholder title="مدیریت کاربران" /> },
-          { path: "plans", element: <ManagementPlaceholder title="مدیریت پلن‌ها" /> },
+          { path: "plans", element: <AdminPlansPage /> },
           { path: "reports", element: <ManagementPlaceholder title="گزارش‌های مدیریتی" /> },
         ],
       },

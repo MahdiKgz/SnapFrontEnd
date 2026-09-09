@@ -57,7 +57,7 @@ export interface UserFilesResponse {
 
 export interface UserDashboardSummary {
   plan: {
-    code: "free";
+    code: "starter" | "pro" | "advanced";
     name: string;
     expiresAt: null;
     remainingDays: null;

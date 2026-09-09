@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useGetBusinessPlansQuery } from "@/features/business/api/business-api";
 import {
   ArrowLeft,
   Building2,
@@ -11,6 +12,7 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const INDIVIDUAL_PLANS = [
   {
@@ -50,20 +52,20 @@ const INDIVIDUAL_PLANS = [
   },
   {
     id: "advanced",
-    name: "پیشرفته (Enterprise Lite)",
+    name: "شرکتی GIS (پیشرفته)",
     priceMonth: "۱,۹۹۰,۰۰۰",
     priceYear: "۱,۵۹۰,۰۰۰",
-    description: "برای تیم‌های بزرگ که نیاز به پردازش مداوم و حجم بالای داده دارند.",
+    description: "فضای همکاری شرکت‌های GIS با یک مدیر و حداکثر سه همکار.",
     features: [
-      "پردازش تا ۲,۵۰۰ لایه در ماه",
-      "حداکثر حجم فایل: ۱ گیگابایت",
-      "پردازش هم‌زمان و موازی فایل‌ها",
-      "اتصال مستقیم به پایگاه‌داده PostGIS",
-      "تعریف متدهای سفارشی صحت‌سنجی",
-      "پشتیبانی اختصاصی ۲۴/۷",
+      "یک مدیر شرکت و حداکثر سه همکار",
+      "افزودن همکار با شماره تلفن و تأیید مشخصات",
+      "افزودن مستقیم یا دعوت با پذیرش همکار",
+      "آمار کلی شرکت و فعالیت هر همکار",
+      "گزارش تعداد آپلود، حجم فایل و خطاهای ترمیم‌شده",
+      "حفظ حریم خصوصی فایل‌های شخصی پیش از عضویت",
     ],
     popular: false,
-    buttonText: "ارتقا به پیشرفته",
+    buttonText: "مشاهده فضای شرکتی",
   },
 ];
 
@@ -95,6 +97,7 @@ const ENTERPRISE_FEATURES = [
 ];
 
 function PricingPage() {
+  const catalog = useGetBusinessPlansQuery();
   const [activeTab, setActiveTab] = useState<"standard" | "enterprise">("standard");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
 
@@ -176,64 +179,76 @@ function PricingPage() {
 
             {/* گرید کارت‌های قیمت‌گذاری */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-              {INDIVIDUAL_PLANS.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={`relative rounded-2xl border p-8 backdrop-blur-md flex flex-col justify-between transition-all duration-300 ${
-                    plan.popular
-                      ? "border-primary bg-card/60 shadow-[0_0_35px_rgba(114,180,145,0.15)] md:-translate-y-2"
-                      : "border-border/60 bg-card/30 hover:border-border"
-                  }`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3.5 right-1/2 translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-black shadow-md">
-                      پیشنهاد ویژه
-                    </div>
-                  )}
-
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
-                      <p className="text-xs text-muted-foreground font-light mt-2 leading-relaxed">
-                        {plan.description}
-                      </p>
-                    </div>
-
-                    {/* قیمت */}
-                    <div className="flex items-baseline gap-1 border-b border-border/40 pb-6">
-                      <span className="text-3xl font-black text-foreground tracking-tight">
-                        {billingCycle === "yearly" ? plan.priceYear : plan.priceMonth}
-                      </span>
-                      <span className="text-xs text-muted-foreground font-light">
-                        تومان / ماهانه
-                      </span>
-                    </div>
-
-                    {/* لیست امکانات */}
-                    <ul className="space-y-3">
-                      {plan.features.map((feature, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-2.5 text-xs text-foreground/80 font-light"
-                        >
-                          <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <Button
-                    className={`w-full h-11 mt-8 font-semibold text-xs transition-all ${
+              {INDIVIDUAL_PLANS.map((staticPlan) => {
+                const live = catalog.data?.data.find((item) => item.code === staticPlan.id);
+                const plan = live
+                  ? {
+                      ...staticPlan,
+                      name: live.name,
+                      priceMonth: live.monthlyPrice.toLocaleString("fa-IR"),
+                      priceYear: live.annualMonthlyPrice.toLocaleString("fa-IR"),
+                    }
+                  : staticPlan;
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-2xl border p-8 backdrop-blur-md flex flex-col justify-between transition-all duration-300 ${
                       plan.popular
-                        ? "shadow-[0_0_20px_rgba(114,180,145,0.2)]"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        ? "border-primary bg-card/60 shadow-[0_0_35px_rgba(114,180,145,0.15)] md:-translate-y-2"
+                        : "border-border/60 bg-card/30 hover:border-border"
                     }`}
                   >
-                    {plan.buttonText}
-                  </Button>
-                </div>
-              ))}
+                    {plan.popular && (
+                      <div className="absolute -top-3.5 right-1/2 translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-black shadow-md">
+                        پیشنهاد ویژه
+                      </div>
+                    )}
+
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                        <p className="text-xs text-muted-foreground font-light mt-2 leading-relaxed">
+                          {plan.description}
+                        </p>
+                      </div>
+
+                      {/* قیمت */}
+                      <div className="flex items-baseline gap-1 border-b border-border/40 pb-6">
+                        <span className="text-3xl font-black text-foreground tracking-tight">
+                          {billingCycle === "yearly" ? plan.priceYear : plan.priceMonth}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-light">
+                          تومان / ماهانه
+                        </span>
+                      </div>
+
+                      {/* لیست امکانات */}
+                      <ul className="space-y-3">
+                        {plan.features.map((feature, idx) => (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2.5 text-xs text-foreground/80 font-light"
+                          >
+                            <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <Button
+                      render={<Link to="/dashboard/company" />}
+                      className={`w-full h-11 mt-8 font-semibold text-xs transition-all ${
+                        plan.popular
+                          ? "shadow-[0_0_20px_rgba(114,180,145,0.2)]"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {plan.buttonText}
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
