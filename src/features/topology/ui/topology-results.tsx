@@ -15,6 +15,7 @@ import {
 
 import type { TopologyIssueGroup, TopologyUploadData } from "../model/types";
 import { useTopologyHealing } from "../model/use-topology-healing";
+import { CadImportNotice } from "./cad-import-notice";
 import { IssueDetails } from "./issue-details";
 import { TopologyIssueGroupCard } from "./topology-issue-group-card";
 
@@ -149,12 +150,14 @@ export function TopologyResults({
           </div>
           <span
             className={`rounded-full px-2 py-1 text-[9px] font-bold ${
-              data.report.valid
+              data.report.valid && !data.report.cadImport?.warnings.length
                 ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
                 : "bg-red-500/12 text-red-700 dark:text-red-300"
             }`}
           >
-            {data.report.valid ? "معتبر" : "نیازمند بررسی"}
+            {data.report.valid && !data.report.cadImport?.warnings.length
+              ? "معتبر"
+              : "نیازمند بررسی"}
           </span>
         </div>
 
@@ -185,6 +188,8 @@ export function TopologyResults({
           </div>
         </dl>
       </div>
+
+      <CadImportNotice report={data.report.cadImport} />
 
       {hasOnlyManualReviewIssues && (
         <div

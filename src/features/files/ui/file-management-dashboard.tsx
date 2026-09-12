@@ -5,6 +5,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HealedExportButton } from "@/features/conversion/ui/healed-export-button";
 import { useCancelHealingMutation } from "@/features/topology";
+import { CadImportNotice } from "@/features/topology/ui/cad-import-notice";
 import { IssueDetails } from "@/features/topology/ui/issue-details";
 import { Popover } from "@base-ui/react/popover";
 import {
@@ -223,6 +224,8 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
               </div>
             </div>
 
+            <CadImportNotice report={file.report?.cadImport} />
+
             <section className="rounded-xl border border-border/60 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -233,7 +236,7 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
                       : "گزارش تحلیل این فایل در دسترس نیست."}
                   </p>
                 </div>
-                {file.report?.valid ? (
+                {file.report?.valid && !file.report.cadImport?.warnings.length ? (
                   <CheckCircle2 className="size-5 text-primary" />
                 ) : (
                   <AlertTriangle className="size-5 text-amber-500" />

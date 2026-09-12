@@ -54,6 +54,16 @@ export type AffectedFeatureCollection = FeatureCollection<Geometry, GeoJsonPrope
 };
 
 export interface TopologyDryRunReport {
+  cadImport?: {
+    sourceCrs: string;
+    targetCrs: "EPSG:4326";
+    partial: boolean;
+    warnings: Array<{
+      code: "CAD_POLYGON_FALLBACK" | "CAD_MISSING_BLOCK";
+      message: string;
+      occurrences: number;
+    }>;
+  };
   mode: "dry-run";
   valid: boolean;
   summary: TopologyReportSummary;

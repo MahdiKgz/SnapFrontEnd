@@ -17,6 +17,7 @@ import {
   useManualReviewMarkers,
   useOriginalGeometryOverlay,
 } from "@/features/topology/model/use-healed-review-map";
+import { CadImportNotice } from "@/features/topology/ui/cad-import-notice";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import { AlertTriangle, Eye, EyeOff, LoaderCircle, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -156,6 +157,14 @@ export function MapWorkbench() {
     <div className="relative h-dvh min-h-[32rem] w-full overflow-hidden bg-background" dir="rtl">
       <MapCanvas containerRef={containerRef} />
       <BasemapPicker mapRef={mapRef} isMapReady={isMapReady} />
+      {!!fileDetail?.report?.cadImport?.warnings.length && (
+        <details className="absolute left-14 top-5 z-20 max-h-[40dvh] w-72 max-w-[calc(100vw-7rem)] overflow-auto rounded-xl border border-amber-500/30 bg-card p-3 text-xs text-foreground shadow-lg">
+          <summary className="cursor-pointer font-semibold text-amber-700 dark:text-amber-300">
+            این نقشه با هشدار CAD وارد شده است
+          </summary>
+          <CadImportNotice report={fileDetail.report.cadImport} />
+        </details>
+      )}
       <PointerCoordinate isMapReady={isMapReady} mapRef={mapRef} />
       <MapMeasurementTools
         mapRef={mapRef}
