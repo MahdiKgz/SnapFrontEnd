@@ -69,4 +69,12 @@ describe("dashboard navigation by role", () => {
     );
     expect(nav.getByRole("link", { name: "پیشخوان" }).getAttribute("aria-current")).toBeNull();
   });
+
+  it("shows article management only to writers", () => {
+    const nav = renderSidebar(["user", "writer"]);
+    expect(nav.getByRole("heading", { name: "انتشار محتوا" })).toBeTruthy();
+    expect(nav.getByRole("link", { name: "مقالات من" }).getAttribute("href")).toBe(
+      "/dashboard/articles",
+    );
+  });
 });

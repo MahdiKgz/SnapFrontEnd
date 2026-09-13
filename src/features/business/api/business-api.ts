@@ -72,6 +72,14 @@ export const businessApi = enhanced.injectEndpoints({
       }),
       invalidatesTags: ["Business", { type: "Files", id: "SUMMARY" }],
     }),
+    assignWriterRole: builder.mutation<unknown, { userId: string; enabled: boolean }>({
+      query: ({ userId, enabled }) => ({
+        url: `/business/admin/users/${userId}/writer-role`,
+        method: "PATCH",
+        body: { enabled },
+      }),
+      invalidatesTags: [{ type: "Business", id: "ADMIN" }],
+    }),
   }),
 });
 export const {
@@ -86,4 +94,5 @@ export const {
   useRenameCompanyMutation,
   useGetPlanUsersQuery,
   useAssignUserPlanMutation,
+  useAssignWriterRoleMutation,
 } = businessApi;

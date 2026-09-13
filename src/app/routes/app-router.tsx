@@ -1,3 +1,4 @@
+import WriterArticlesPage from "@/features/articles/ui/writer-articles-page";
 import { ProtectedRoute } from "@/features/auth/ui/protected-route";
 import { PublicOnlyRoute } from "@/features/auth/ui/public-only-route";
 import AdminPlansPage from "@/features/business/ui/admin-plans-page";
@@ -11,6 +12,7 @@ import { ManagementPlaceholder } from "../pages/dashboard/management-placeholder
 import Overview from "../pages/dashboard/overview";
 import Home from "../pages/home";
 import BlogPage from "../pages/home/blog";
+import ArticlePage from "../pages/home/blog/article";
 import ContactPage from "../pages/home/contact";
 import PricingPage from "../pages/home/pricing";
 import LoginPage from "../pages/login";
@@ -40,6 +42,7 @@ export const appRouter = createBrowserRouter([
         path: "blog",
         element: <BlogPage />,
       },
+      { path: "blog/:slug", element: <ArticlePage /> },
       {
         path: "contact-us",
         element: <ContactPage />,
@@ -102,6 +105,14 @@ export const appRouter = createBrowserRouter([
       {
         path: "convert",
         element: <ConversionPage />,
+      },
+      {
+        path: "articles",
+        element: (
+          <ProtectedRoute requiredRole="writer">
+            <WriterArticlesPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "admin",

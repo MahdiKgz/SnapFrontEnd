@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   LogOut,
   Map,
+  Newspaper,
   Tags,
   User,
   Users,
@@ -18,6 +19,13 @@ import {
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 const NAVIGATION_SECTIONS = [
+  {
+    id: "publishing",
+    title: "انتشار محتوا",
+    requiredRole: "writer",
+    adminOnly: false,
+    items: [{ path: "/dashboard/articles", title: "مقالات من", icon: Newspaper }],
+  },
   {
     id: "workspace",
     title: "فضای کاری",
@@ -90,46 +98,50 @@ export function DashboardLayout() {
           </div>
 
           <nav aria-label="منوی داشبورد" className="min-h-0 flex-1 space-y-6 overflow-y-auto">
-            {NAVIGATION_SECTIONS.filter((section) => !section.adminOnly || isAdmin).map(
-              (section) => (
-                <section key={section.id} aria-labelledby={`sidebar-${section.id}`}>
-                  <h2
-                    id={`sidebar-${section.id}`}
-                    className="mb-2 px-4 text-[11px] font-semibold text-sidebar-foreground/50"
-                  >
-                    {section.title}
-                  </h2>
-                  <ul className="space-y-1">
-                    {section.items.map((item) => (
-                      <li key={item.path}>
-                        <NavLink
-                          to={item.path}
-                          end={item.path === "/dashboard"}
-                          className={({ isActive }) =>
-                            `flex h-10 items-center gap-3 rounded-lg px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring ${
-                              isActive
-                                ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm"
-                                : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                            }`
-                          }
-                        >
-                          <item.icon className="size-4 shrink-0" aria-hidden="true" />
-                          <span>{item.title}</span>
-                          {item.path === "/dashboard/company" && invitations > 0 && (
-                            <span
-                              aria-label={`${invitations.toLocaleString("fa-IR")} دعوت همکاری`}
-                              className="mr-auto rounded-full bg-sidebar-primary/15 px-1.5 text-xs font-bold"
-                            >
-                              {invitations.toLocaleString("fa-IR")}
-                            </span>
-                          )}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ),
-            )}
+            {NAVIGATION_SECTIONS.filter(
+              (section) =>
+                (!section.adminOnly || isAdmin) &&
+                (!("requiredRole" in section) ||
+                  !section.requiredRole ||
+                  user?.roles.includes(section.requiredRole)),
+            ).map((section) => (
+              <section key={section.id} aria-labelledby={`sidebar-${section.id}`}>
+                <h2
+                  id={`sidebar-${section.id}`}
+                  className="mb-2 px-4 text-[11px] font-semibold text-sidebar-foreground/50"
+                >
+                  {section.title}
+                </h2>
+                <ul className="space-y-1">
+                  {section.items.map((item) => (
+                    <li key={item.path}>
+                      <NavLink
+                        to={item.path}
+                        end={item.path === "/dashboard"}
+                        className={({ isActive }) =>
+                          `flex h-10 items-center gap-3 rounded-lg px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring ${
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm"
+                              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                          }`
+                        }
+                      >
+                        <item.icon className="size-4 shrink-0" aria-hidden="true" />
+                        <span>{item.title}</span>
+                        {item.path === "/dashboard/company" && invitations > 0 && (
+                          <span
+                            aria-label={`${invitations.toLocaleString("fa-IR")} دعوت همکاری`}
+                            className="mr-auto rounded-full bg-sidebar-primary/15 px-1.5 text-xs font-bold"
+                          >
+                            {invitations.toLocaleString("fa-IR")}
+                          </span>
+                        )}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </nav>
         </div>
 

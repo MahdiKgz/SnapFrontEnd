@@ -48,7 +48,7 @@ export interface CompanyDashboard {
   invitations: { id: string; user: Person; expiresAt: string }[];
 }
 export interface PlanUsers {
-  items: (Person & { plan: BusinessPlan; planCode: PlanCode })[];
+  items: (Person & { plan: BusinessPlan; planCode: PlanCode; roles: string[] })[];
   pagination: { skip: number; limit: number; total: number };
 }
 export const businessError = (error: unknown): string => {

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   add: vi.fn(),
   respond: vi.fn(),
   assign: vi.fn(),
+  assignWriter: vi.fn(),
   remove: vi.fn(),
   context: vi.fn(),
   company: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock("../api/business-api", () => ({
   useAddColleagueMutation: () => [mocks.add, { isLoading: false }],
   useRespondCompanyInvitationMutation: () => [mocks.respond, { isLoading: false }],
   useAssignUserPlanMutation: () => [mocks.assign, { isLoading: false }],
+  useAssignWriterRoleMutation: () => [mocks.assignWriter, { isLoading: false }],
   useRemoveColleagueMutation: () => [mocks.remove, { isLoading: false }],
   useRenameCompanyMutation: () => [vi.fn(), { isLoading: false }],
   useRevokeCompanyInvitationMutation: () => [vi.fn(), { isLoading: false }],
@@ -71,7 +73,7 @@ const usage = {
 };
 beforeEach(() => {
   mocks.lookup.mockReturnValue({ unwrap: async () => ({ data: person }), abort: mocks.abort });
-  for (const mutation of [mocks.add, mocks.respond, mocks.assign, mocks.remove])
+  for (const mutation of [mocks.add, mocks.respond, mocks.assign, mocks.assignWriter, mocks.remove])
     mutation.mockReturnValue({ unwrap: async () => ({ success: true }) });
   mocks.context.mockReturnValue({
     data: { data: { plan: starter, effectivePlan: starter, company: null, invitations: [] } },
@@ -92,7 +94,7 @@ beforeEach(() => {
   mocks.users.mockReturnValue({
     currentData: {
       data: {
-        items: [{ ...person, planCode: "starter", plan: starter }],
+        items: [{ ...person, planCode: "starter", plan: starter, roles: ["user"] }],
         pagination: { total: 1, skip: 0, limit: 10 },
       },
     },

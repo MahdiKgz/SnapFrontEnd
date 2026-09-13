@@ -6,6 +6,7 @@ import { LoaderCircle, RefreshCw, Search } from "lucide-react";
 
 import {
   useAssignUserPlanMutation,
+  useAssignWriterRoleMutation,
   useGetBusinessPlansQuery,
   useGetPlanUsersQuery,
 } from "../api/business-api";
@@ -26,6 +27,7 @@ export default function AdminPlansPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [assign, assigning] = useAssignUserPlanMutation();
+  const [assignWriter, assigningWriter] = useAssignWriterRoleMutation();
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setQueryText(search.trim());
@@ -57,7 +59,7 @@ export default function AdminPlansPage() {
         <p className="text-xs font-semibold text-primary">مدیریت سامانه</p>
         <h1 className="mt-1 text-2xl font-black">مدیریت پلن‌ها</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          تعیین پلن کاربران و فعال‌سازی فضای شرکت‌های GIS
+          تعیین پلن کاربران، فعال‌سازی فضای شرکت‌های GIS و دسترسی نویسندگی
         </p>
       </header>
       <section className="grid shrink-0 gap-3 md:grid-cols-3">
@@ -137,6 +139,7 @@ export default function AdminPlansPage() {
                   <th className="px-5 py-3">کاربر</th>
                   <th className="px-5 py-3">شماره تلفن</th>
                   <th className="px-5 py-3">پلن فعلی</th>
+                  <th className="px-5 py-3">نقش نویسنده</th>
                   <th className="px-5 py-3">تغییر پلن</th>
                 </tr>
               </thead>
@@ -148,6 +151,30 @@ export default function AdminPlansPage() {
                       <bdi dir="ltr">{user.phone}</bdi>
                     </td>
                     <td className="px-5 py-4 text-xs">{user.plan.name}</td>
+                    <td className="px-5 py-4">
+                      <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={user.roles.includes("writer")}
+                          disabled={assigningWriter.isLoading}
+                          onChange={async (event) => {
+                            setError("");
+                            setMessage("");
+                            try {
+                              await assignWriter({
+                                userId: user.id,
+                                enabled: event.target.checked,
+                              }).unwrap();
+                              setMessage(`دسترسی نویسندگی ${user.name} به‌روزرسانی شد.`);
+                            } catch (failure) {
+                              setError(businessError(failure));
+                            }
+                          }}
+                          className="size-4 accent-primary"
+                        />
+                        {user.roles.includes("writer") ? "فعال" : "غیرفعال"}
+                      </label>
+                    </td>
                     <td className="px-5 py-4">
                       <select
                         aria-label={`تغییر پلن ${user.name}`}
@@ -169,7 +196,7 @@ export default function AdminPlansPage() {
                 ))}
                 {!page.items.length && (
                   <tr>
-                    <td colSpan={4} className="p-10 text-center text-muted-foreground">
+                    <td colSpan={5} className="p-10 text-center text-muted-foreground">
                       کاربری با این شرایط پیدا نشد.
                     </td>
                   </tr>

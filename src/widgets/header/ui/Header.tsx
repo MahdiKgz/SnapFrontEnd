@@ -183,7 +183,11 @@ function Header() {
                     </div>
                     <div className="mt-3 flex items-center gap-1.5 border-t border-border/60 pt-2.5 text-[11px] text-muted-foreground">
                       <ShieldCheck className="size-3.5 text-primary" />
-                      {user.roles.includes("admin") ? "مدیر سیستم" : "کاربر"}
+                      {user.roles.includes("admin")
+                        ? "مدیر سیستم"
+                        : user.roles.includes("writer")
+                          ? "نویسنده"
+                          : "کاربر"}
                     </div>
                   </div>
 
