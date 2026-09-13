@@ -66,7 +66,11 @@ export function MapWorkbench() {
   const fileDetailRequest = useGetUserFileQuery(healedFileId ?? "", {
     skip: !healedFileId,
   });
-  const fileDetail = fileDetailRequest.data?.data;
+  const fileDetail = fileDetailRequest.currentData?.data;
+  const savedFileIsHealed = fileDetail?.status === "completed";
+  const savedFileIsReady = fileDetail?.id === healedFileId;
+  const savedFileIsLoading = fileDetailRequest.isFetching || healedOutputRequest.isFetching ||
+    (!savedFileIsHealed && originalRequest.isFetching);
   const reviewIssues = useMemo(
     () => fileDetail?.report?.issues ?? [],
     [fileDetail?.report?.issues],
@@ -110,21 +114,27 @@ export function MapWorkbench() {
   }, [isPanelOpen, mapRef]);
 
   useEffect(() => {
-    if (!healedFileId || !isMapReady || requestedHealedFileId.current === healedFileId) return;
+    if (!healedFileId || !isMapReady || !savedFileIsReady ||
+      requestedHealedFileId.current === healedFileId) return;
 
     requestedHealedFileId.current = healedFileId;
     setHealedFileLoadError(false);
     setOriginalGeoJson(null);
     setIsOriginalVisible(false);
+    setIsHealedResultVisible(false);
+    setTopologyResult(null);
+    setSelectedFeatureIndexes([]);
     let cancelled = false;
-    const request = loadHealedOutput(`/heal/${encodeURIComponent(healedFileId)}/output`);
+    const request = savedFileIsHealed
+      ? loadHealedOutput(`/heal/${encodeURIComponent(healedFileId)}/output`)
+      : loadOriginalInput(healedFileId);
     void request
       .unwrap()
       .then(async (output) => {
         if (cancelled) return;
         setTopologyResult(null);
         setSelectedFeatureIndexes([]);
-        setIsHealedResultVisible(true);
+        setIsHealedResultVisible(savedFileIsHealed);
         await previewGeoJson(output);
       })
       .catch(() => {
@@ -137,6 +147,8 @@ export function MapWorkbench() {
   }, [
     healedFileId,
     healedFileLoadAttempt,
+    savedFileIsReady,
+    savedFileIsHealed,
     isMapReady,
     loadHealedOutput,
     loadOriginalInput,
@@ -144,6 +156,7 @@ export function MapWorkbench() {
   ]);
 
   const retryHealedFile = () => {
+    if (fileDetailRequest.isError) void fileDetailRequest.refetch();
     requestedHealedFileId.current = null;
     setHealedFileLoadAttempt((attempt) => attempt + 1);
   };
@@ -176,17 +189,17 @@ export function MapWorkbench() {
         <FeatureInspectionPanel mapRef={mapRef} isMapReady={isMapReady} />
       )}
 
-      {healedFileId && healedOutputRequest.isFetching && (
+      {healedFileId && savedFileIsLoading && (
         <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border/70 bg-background/90 px-4 py-3 text-xs text-foreground shadow-xl backdrop-blur">
           <LoaderCircle className="size-4 animate-spin text-emerald-700 dark:text-emerald-400" />
-          در حال نمایش عوارض ترمیم‌شده...
+          در حال دریافت عوارض فایل...
         </div>
       )}
 
-      {healedFileId && healedFileLoadError && !healedOutputRequest.isFetching && (
+      {healedFileId && (healedFileLoadError || fileDetailRequest.isError) && !savedFileIsLoading && (
         <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-red-500/30 bg-background/95 px-4 py-3 text-xs text-foreground shadow-xl backdrop-blur">
           <AlertTriangle className="size-4 shrink-0 text-red-700 dark:text-red-400" />
-          <span>نمایش خروجی ترمیم‌شده ممکن نشد.</span>
+          <span>دریافت اطلاعات یا عوارض فایل ممکن نشد.</span>
           <button
             type="button"
             onClick={retryHealedFile}
@@ -198,7 +211,14 @@ export function MapWorkbench() {
         </div>
       )}
 
-      {healedFileId && !healedFileLoadError && (
+      {healedFileId && savedFileIsReady && !savedFileIsHealed && !savedFileIsLoading &&
+        !healedFileLoadError && !fileDetailRequest.isError && (
+        <div role="status" className="absolute right-5 top-5 z-20 max-w-64 rounded-xl border border-border/70 bg-background/90 px-4 py-3 text-xs text-foreground shadow-xl">
+          هندسهٔ اصلی فایل؛ ترمیم هنوز تکمیل نشده است.
+        </div>
+      )}
+
+      {healedFileId && savedFileIsHealed && isHealedResultVisible && !healedFileLoadError && (
         <button
           type="button"
           aria-pressed={isOriginalVisible}

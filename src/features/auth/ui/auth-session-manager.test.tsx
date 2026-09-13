@@ -60,8 +60,9 @@ describe("AuthSessionManager", () => {
     expect(refreshTrigger).toHaveBeenCalledOnce();
   });
 
-  it("resolves to anonymous when the refresh session has expired", async () => {
-    refreshTrigger.mockReturnValue({ unwrap: () => Promise.reject(new Error("expired")) });
+  it.each(["REFRESH_SESSION_REQUIRED", "REFRESH_TOKEN_INVALID"])(
+    "resolves to anonymous without retrying when refresh returns %s", async (code) => {
+    refreshTrigger.mockReturnValue({ unwrap: () => Promise.reject({ status: 401, data: { code } }) });
     const store = createTestStore();
 
     render(
@@ -72,5 +73,6 @@ describe("AuthSessionManager", () => {
 
     await waitFor(() => expect(store.getState().auth.status).toBe("anonymous"));
     expect(store.getState().auth.accessToken).toBeNull();
+    expect(refreshTrigger).toHaveBeenCalledOnce();
   });
 });
