@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { FilePenLine, LoaderCircle, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+
 import {
   useCreateArticleMutation,
   useDeleteArticleMutation,
@@ -12,7 +14,6 @@ import {
   useUpdateArticleMutation,
 } from "@features/articles";
 import type { ArticleDetail, ArticleInput, ArticleStatus } from "@features/articles";
-import { FilePenLine, LoaderCircle, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 const emptyArticle: ArticleInput = {
   title: "",

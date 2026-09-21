@@ -44,27 +44,19 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/consistent-type-imports": ["error", { prefer: "type-imports" }],
 
-      "import/order": [
-        "error",
-        {
-          groups: ["builtin", "external", "internal", ["parent", "sibling", "index"]],
-          pathGroups: [
-            { pattern: "react", group: "external", position: "before" },
-            { pattern: "@app/**", group: "internal", position: "before" },
-            { pattern: "@pages/**", group: "internal" },
-            { pattern: "@widgets/**", group: "internal" },
-            { pattern: "@features/**", group: "internal" },
-            { pattern: "@entities/**", group: "internal" },
-            { pattern: "@shared/**", group: "internal", position: "after" },
-          ],
-          pathGroupsExcludedImportTypes: ["react"],
-          "newlines-between": "always",
-          alphabetize: { order: "asc", caseInsensitive: true },
-        },
-      ],
+      // Prettier owns deterministic import ordering. Running two import sorters caused circular
+      // autofixes, while the FSD checker below the lint command enforces dependency direction.
+      "import/order": "off",
       "import/no-cycle": "error",
 
       "prettier/prettier": "error",
+    },
+  },
+
+  {
+    files: ["**/*.{test,spec}.{ts,tsx}"],
+    rules: {
+      "@eslint-react/no-create-ref": "off",
     },
   },
 

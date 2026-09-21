@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import { Button } from "@/shared/ui/button";
-import { useGetBusinessPlansQuery } from "@features/business";
 import {
   ArrowLeft,
   Building2,
@@ -13,6 +12,8 @@ import {
   Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+
+import { useGetBusinessPlansQuery } from "@features/business";
 
 const INDIVIDUAL_PLANS = [
   {

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/shared/ui/button";
-import { useLazyListPublishedArticlesQuery } from "@features/articles";
-import type { ArticleSummary } from "@features/articles";
 import { Calendar, Layers, LoaderCircle, User } from "lucide-react";
 import { Link } from "react-router-dom";
+
+import { useLazyListPublishedArticlesQuery } from "@features/articles";
+import type { ArticleSummary } from "@features/articles";
 
 const formatDate = (value: string | null) =>
   value ? new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium" }).format(new Date(value)) : "—";

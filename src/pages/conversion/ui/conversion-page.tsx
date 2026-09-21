@@ -3,15 +3,6 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import {
-  conversionError,
-  conversionWarning,
-  useConversionJobStatus,
-  useConvertFileMutation,
-  useDownloadConversionMutation,
-  validateConversion,
-} from "@features/conversion";
-import type { ConversionDownload, ConversionFormat } from "@features/conversion";
-import {
   ArrowLeftRight,
   Download,
   FileArchive,
@@ -20,6 +11,15 @@ import {
   Upload,
 } from "lucide-react";
 
+import {
+  conversionError,
+  conversionWarning,
+  useConversionJobStatus,
+  useConvertFileMutation,
+  useDownloadConversionMutation,
+  validateConversion,
+} from "@features/conversion";
+import type { ConversionDownload, ConversionFormat } from "@features/conversion";
 
 export default function ConversionPage() {
   const [file, setFile] = useState<File | null>(null);

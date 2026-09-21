@@ -1,6 +1,7 @@
-import { useGetPublishedArticleQuery } from "@features/articles";
 import { Calendar, LoaderCircle, Tag, User } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
+
+import { useGetPublishedArticleQuery } from "@features/articles";
 
 export default function ArticlePage() {
   const { slug = "" } = useParams();

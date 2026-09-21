@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
-import { ThemeToggle } from "@features/theme";
 import { BadgeCheck, BrainCircuit, LayoutDashboard, PanelLeftClose, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
+
+import { ThemeToggle } from "@features/theme";
 
 import { MAP_TOOLS, type MapToolId } from "../model/map-tools";
 

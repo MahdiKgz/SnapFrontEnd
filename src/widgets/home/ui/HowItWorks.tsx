@@ -1,5 +1,3 @@
-import React from "react";
-
 import { CheckCircle2, Download, ShieldAlert, UploadCloud } from "lucide-react";
 
 const STEPS_DATA = [

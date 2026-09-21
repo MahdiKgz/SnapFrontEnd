@@ -1,16 +1,18 @@
 // @vitest-environment jsdom
 import { useState } from "react";
 
-import { useMapLibreMap } from "@entities/map";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { AffectedFeatureCollection } from "@features/topology";
 import {
   useManualReviewMarkers,
   useOriginalGeometryOverlay,
   useTopologyResultsMap,
 } from "@features/topology";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useMapLibreMap } from "@entities/map";
 
 const { maps } = vi.hoisted(() => ({ maps: [] as FakeMap[] }));
 

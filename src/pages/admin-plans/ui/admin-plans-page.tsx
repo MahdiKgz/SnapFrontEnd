@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { LoaderCircle, RefreshCw, Search } from "lucide-react";
+
 import {
   BusinessMessage,
   ConfirmBusinessAction,
@@ -13,7 +15,6 @@ import {
   useGetPlanUsersQuery,
 } from "@features/business";
 import type { PlanCode, PlanUsers } from "@features/business";
-import { LoaderCircle, RefreshCw, Search } from "lucide-react";
 
 export default function AdminPlansPage() {
   const plans = useGetBusinessPlansQuery();

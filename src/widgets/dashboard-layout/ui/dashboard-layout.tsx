@@ -1,7 +1,4 @@
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { logout, useLogoutMutation } from "@features/auth";
-import { useGetBusinessContextQuery } from "@features/business";
-import { ThemeToggle } from "@features/theme";
 import {
   ArrowLeftRight,
   Building2,
@@ -16,6 +13,10 @@ import {
   Users,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+
+import { logout, useLogoutMutation } from "@features/auth";
+import { useGetBusinessContextQuery } from "@features/business";
+import { ThemeToggle } from "@features/theme";
 
 const NAVIGATION_SECTIONS = [
   {

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { CheckCircle2, CircleX, Info, X } from "lucide-react";
+
 import { filesApi, useGetUserFilesQuery } from "@features/files";
 import {
   buildTopologyApiUrl,
@@ -11,7 +13,6 @@ import {
   trackHealingJob,
   watchHealingJob,
 } from "@features/topology";
-import { CheckCircle2, CircleX, Info, X } from "lucide-react";
 
 export function HealingSyncManager() {
   const dispatch = useAppDispatch();

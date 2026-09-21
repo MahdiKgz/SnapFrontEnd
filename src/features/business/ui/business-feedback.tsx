@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
-import { Button } from "@shared/ui/button";
 import { Dialog } from "@base-ui/react/dialog";
 import { LoaderCircle } from "lucide-react";
+
+import { Button } from "@shared/ui/button";
 
 export function BusinessMessage({ error, children }: { error?: boolean; children: ReactNode }) {
   return (

@@ -1,5 +1,3 @@
-import React from "react";
-
 import { FileText, Globe, Mail, Phone, Shield } from "lucide-react";
 
 function Footer() {

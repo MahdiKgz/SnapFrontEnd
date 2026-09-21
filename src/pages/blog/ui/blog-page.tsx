@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 
 import { Input } from "@/shared/ui/input";
-import { useGetArticleCategoriesQuery } from "@features/articles";
 import { Layers, Search, Tag } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+
+import { useGetArticleCategoriesQuery } from "@features/articles";
 
 import { ArticleFeed } from "./article-feed";
 

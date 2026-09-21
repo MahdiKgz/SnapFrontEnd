@@ -2,8 +2,10 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { AddColleagueDialog } from "@features/business";
 import AdminPlansPage from "@pages/admin-plans/ui/admin-plans-page";
+
+import { AddColleagueDialog } from "@features/business";
+
 import CompanyPage from "./company-page";
 
 const mocks = vi.hoisted(() => ({

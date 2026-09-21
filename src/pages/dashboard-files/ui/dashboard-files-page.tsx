@@ -3,18 +3,6 @@ import type { FormEvent, ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
-import { HealedExportButton } from "@features/conversion";
-import {
-  DEFAULT_FILES_LIMIT,
-  EMPTY_FILE_FILTERS,
-  FileListToolbar,
-  useDeleteUserFileMutation,
-  useGetUserFileQuery,
-  useGetUserFilesQuery,
-  useRenameUserFileMutation,
-} from "@features/files";
-import type { FileFilterValues, UserFileStatus, UserFileSummary } from "@features/files";
-import { CadImportNotice, IssueDetails, useCancelHealingMutation } from "@features/topology";
 import { Popover } from "@base-ui/react/popover";
 import {
   AlertTriangle,
@@ -33,6 +21,18 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { HealedExportButton } from "@features/conversion";
+import {
+  DEFAULT_FILES_LIMIT,
+  EMPTY_FILE_FILTERS,
+  FileListToolbar,
+  useDeleteUserFileMutation,
+  useGetUserFileQuery,
+  useGetUserFilesQuery,
+  useRenameUserFileMutation,
+} from "@features/files";
+import type { FileFilterValues, UserFileStatus, UserFileSummary } from "@features/files";
+import { CadImportNotice, IssueDetails, useCancelHealingMutation } from "@features/topology";
 
 const STATUS_PRESENTATION: Record<UserFileStatus, { label: string; className: string }> = {
   "dry-run-complete": {
@@ -177,6 +177,7 @@ function Modal({
             <X />
           </Button>
         </header>
+        {/* eslint-disable-next-line react-hooks/refs -- The render prop receives the callback without invoking it. */}
         {typeof children === "function" ? children(close) : children}
       </section>
     </div>

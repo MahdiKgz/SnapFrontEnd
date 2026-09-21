@@ -4,6 +4,12 @@ import { useAppDispatch } from "@/app/store/hooks";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff, Lock, ShieldCheck, Smartphone } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { z } from "zod";
+
 import {
   getAuthErrorMessage,
   getPostAuthRedirect,
@@ -11,11 +17,6 @@ import {
   useLoginMutation,
 } from "@features/auth";
 import { ThemeToggle } from "@features/theme";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Lock, ShieldCheck, Smartphone } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { z } from "zod";
 
 const loginSchema = z.object({
   phone: z

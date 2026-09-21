@@ -11,10 +11,11 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/shared/ui/navigation-menu";
-import { logout, useLogoutMutation } from "@features/auth";
-import { ThemeToggle } from "@features/theme";
 import { ChevronDown, LayoutDashboard, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
+
+import { logout, useLogoutMutation } from "@features/auth";
+import { ThemeToggle } from "@features/theme";
 
 function Header() {
   const dispatch = useAppDispatch();

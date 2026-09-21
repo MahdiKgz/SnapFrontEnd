@@ -75,6 +75,8 @@ vi.mock("@features/files/api/files-api", () => ({
 }));
 
 vi.mock("@features/topology", () => ({
+  CadImportNotice: () => null,
+  IssueDetails: () => null,
   useCancelHealingMutation: () => [vi.fn(), { isLoading: false }],
 }));
 

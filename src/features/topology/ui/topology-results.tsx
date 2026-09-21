@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import { Tooltip } from "@/shared/ui/tooltip";
-import { HealedExportButton } from "@/features/conversion/ui/healed-export-button";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import {
   AlertCircle,
@@ -12,6 +11,8 @@ import {
   OctagonX,
   WandSparkles,
 } from "lucide-react";
+
+import { HealedExportButton } from "@features/conversion";
 
 import type { TopologyIssueGroup, TopologyUploadData } from "../model/types";
 import { useTopologyHealing } from "../model/use-topology-healing";

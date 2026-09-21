@@ -3,6 +3,8 @@ import { type FormEvent, useState } from "react";
 import { useAppSelector } from "@/app/store/hooks";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { Building2, Crown, LoaderCircle, RefreshCw, Users } from "lucide-react";
+
 import {
   AddColleagueDialog,
   BusinessMessage,
@@ -17,7 +19,7 @@ import {
   useRevokeCompanyInvitationMutation,
 } from "@features/business";
 import type { BusinessContext } from "@features/business";
-import { Building2, Crown, LoaderCircle, RefreshCw, Users } from "lucide-react";
+
 export default function CompanyPage() {
   const context = useGetBusinessContextQuery(undefined, {
     pollingInterval: 30000,

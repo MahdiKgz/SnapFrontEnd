@@ -1,5 +1,5 @@
-import { Button, buttonVariants } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/cn";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import { ArrowRight, Home, LockKeyhole, ShieldX } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 

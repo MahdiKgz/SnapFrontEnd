@@ -1,7 +1,8 @@
+import { configureStore, createListenerMiddleware } from "@reduxjs/toolkit";
+
 import { authApi, authReducer, logout } from "@features/auth";
 import { conversionApi } from "@features/conversion";
 import { healingSyncReducer, resetHealingSync, topologyApi } from "@features/topology";
-import { configureStore, createListenerMiddleware } from "@reduxjs/toolkit";
 
 const sessionListener = createListenerMiddleware();
 

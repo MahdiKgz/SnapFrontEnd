@@ -2,7 +2,7 @@ import type {
   ManualReviewDecision,
   TopologyDryRunReport,
   TopologyHealResult,
-} from "../../topology/model/types";
+} from "@features/topology";
 
 export type UserFileStatus =
   | "dry-run-complete"

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { MapCanvas, useMapLibreMap } from "@entities/map";
+import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
+import { AlertTriangle, Eye, EyeOff, LoaderCircle, RefreshCw } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+
 import { BasemapPicker } from "@features/basemap";
 import { FeatureInspectionPanel } from "@features/feature-inspection";
 import { useGetUserFileQuery } from "@features/files";
@@ -16,9 +19,8 @@ import {
   useOriginalGeometryOverlay,
   useTopologyResultsMap,
 } from "@features/topology";
-import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
-import { AlertTriangle, Eye, EyeOff, LoaderCircle, RefreshCw } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+
+import { MapCanvas, useMapLibreMap } from "@entities/map";
 
 import { type MapToolId } from "../model/map-tools";
 import { MapToolPanel } from "./map-tool-panel";
@@ -67,7 +69,9 @@ export function MapWorkbench() {
   const fileDetail = fileDetailRequest.currentData?.data;
   const savedFileIsHealed = fileDetail?.status === "completed";
   const savedFileIsReady = fileDetail?.id === healedFileId;
-  const savedFileIsLoading = fileDetailRequest.isFetching || healedOutputRequest.isFetching ||
+  const savedFileIsLoading =
+    fileDetailRequest.isFetching ||
+    healedOutputRequest.isFetching ||
     (!savedFileIsHealed && originalRequest.isFetching);
   const reviewIssues = useMemo(
     () => fileDetail?.report?.issues ?? [],
@@ -112,8 +116,13 @@ export function MapWorkbench() {
   }, [isPanelOpen, mapRef]);
 
   useEffect(() => {
-    if (!healedFileId || !isMapReady || !savedFileIsReady ||
-      requestedHealedFileId.current === healedFileId) return;
+    if (
+      !healedFileId ||
+      !isMapReady ||
+      !savedFileIsReady ||
+      requestedHealedFileId.current === healedFileId
+    )
+      return;
 
     requestedHealedFileId.current = healedFileId;
     setHealedFileLoadError(false);
@@ -194,27 +203,36 @@ export function MapWorkbench() {
         </div>
       )}
 
-      {healedFileId && (healedFileLoadError || fileDetailRequest.isError) && !savedFileIsLoading && (
-        <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-red-500/30 bg-background/95 px-4 py-3 text-xs text-foreground shadow-xl backdrop-blur">
-          <AlertTriangle className="size-4 shrink-0 text-red-700 dark:text-red-400" />
-          <span>دریافت اطلاعات یا عوارض فایل ممکن نشد.</span>
-          <button
-            type="button"
-            onClick={retryHealedFile}
-            className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 font-semibold transition-colors hover:bg-border"
-          >
-            <RefreshCw className="size-3.5" />
-            تلاش دوباره
-          </button>
-        </div>
-      )}
+      {healedFileId &&
+        (healedFileLoadError || fileDetailRequest.isError) &&
+        !savedFileIsLoading && (
+          <div className="absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-red-500/30 bg-background/95 px-4 py-3 text-xs text-foreground shadow-xl backdrop-blur">
+            <AlertTriangle className="size-4 shrink-0 text-red-700 dark:text-red-400" />
+            <span>دریافت اطلاعات یا عوارض فایل ممکن نشد.</span>
+            <button
+              type="button"
+              onClick={retryHealedFile}
+              className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 font-semibold transition-colors hover:bg-border"
+            >
+              <RefreshCw className="size-3.5" />
+              تلاش دوباره
+            </button>
+          </div>
+        )}
 
-      {healedFileId && savedFileIsReady && !savedFileIsHealed && !savedFileIsLoading &&
-        !healedFileLoadError && !fileDetailRequest.isError && (
-        <div role="status" className="absolute right-5 top-5 z-20 max-w-64 rounded-xl border border-border/70 bg-background/90 px-4 py-3 text-xs text-foreground shadow-xl">
-          هندسهٔ اصلی فایل؛ ترمیم هنوز تکمیل نشده است.
-        </div>
-      )}
+      {healedFileId &&
+        savedFileIsReady &&
+        !savedFileIsHealed &&
+        !savedFileIsLoading &&
+        !healedFileLoadError &&
+        !fileDetailRequest.isError && (
+          <div
+            role="status"
+            className="absolute right-5 top-5 z-20 max-w-64 rounded-xl border border-border/70 bg-background/90 px-4 py-3 text-xs text-foreground shadow-xl"
+          >
+            هندسهٔ اصلی فایل؛ ترمیم هنوز تکمیل نشده است.
+          </div>
+        )}
 
       {healedFileId && savedFileIsHealed && isHealedResultVisible && !healedFileLoadError && (
         <button

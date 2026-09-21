@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { authReducer } from "@features/auth";
-import type { AuthState } from "@features/auth";
 import { configureStore } from "@reduxjs/toolkit";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { authReducer } from "@features/auth";
+import type { AuthState } from "@features/auth";
 
 import Header from "./Header";
 

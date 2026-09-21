@@ -1,5 +1,3 @@
-import React from "react";
-
 import { Database, Layers, Sliders, Zap } from "lucide-react";
 
 // نصب پکیج lucide-react لازمه: pnpm add lucide-react

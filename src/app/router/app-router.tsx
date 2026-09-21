@@ -1,4 +1,5 @@
-import { ProtectedRoute, PublicOnlyRoute } from "@features/auth";
+import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
+
 import { AdminPlansPage } from "@pages/admin-plans";
 import { ArticlePage } from "@pages/article";
 import { BlogPage } from "@pages/blog";
@@ -14,10 +15,12 @@ import { MapPage } from "@pages/map";
 import { PricingPage } from "@pages/pricing";
 import { RegisterPage } from "@pages/register";
 import { WriterArticlesPage } from "@pages/writer-articles";
+
 import { AuthLayout } from "@widgets/auth-layout";
 import { DashboardLayout } from "@widgets/dashboard-layout";
 import { PublicLayout } from "@widgets/public-layout";
-import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
+
+import { ProtectedRoute, PublicOnlyRoute } from "@features/auth";
 
 export const appRouter = createBrowserRouter([
   {

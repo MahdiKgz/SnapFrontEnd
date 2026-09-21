@@ -61,18 +61,22 @@ describe("AuthSessionManager", () => {
   });
 
   it.each(["REFRESH_SESSION_REQUIRED", "REFRESH_TOKEN_INVALID"])(
-    "resolves to anonymous without retrying when refresh returns %s", async (code) => {
-    refreshTrigger.mockReturnValue({ unwrap: () => Promise.reject({ status: 401, data: { code } }) });
-    const store = createTestStore();
+    "resolves to anonymous without retrying when refresh returns %s",
+    async (code) => {
+      refreshTrigger.mockReturnValue({
+        unwrap: () => Promise.reject({ status: 401, data: { code } }),
+      });
+      const store = createTestStore();
 
-    render(
-      <Provider store={store}>
-        <AuthSessionManager>application</AuthSessionManager>
-      </Provider>,
-    );
+      render(
+        <Provider store={store}>
+          <AuthSessionManager>application</AuthSessionManager>
+        </Provider>,
+      );
 
-    await waitFor(() => expect(store.getState().auth.status).toBe("anonymous"));
-    expect(store.getState().auth.accessToken).toBeNull();
-    expect(refreshTrigger).toHaveBeenCalledOnce();
-  });
+      await waitFor(() => expect(store.getState().auth.status).toBe("anonymous"));
+      expect(store.getState().auth.accessToken).toBeNull();
+      expect(refreshTrigger).toHaveBeenCalledOnce();
+    },
+  );
 });

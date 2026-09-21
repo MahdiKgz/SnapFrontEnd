@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { authReducer } from "@features/auth";
-import type { AuthState } from "@features/auth";
 import { configureStore } from "@reduxjs/toolkit";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { authReducer } from "@features/auth";
+import type { AuthState } from "@features/auth";
 
 import { DashboardLayout } from "./dashboard-layout";
 

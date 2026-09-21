@@ -1,5 +1,10 @@
 # React + TypeScript + Vite
 
+## Frontend architecture
+
+The frontend uses a pragmatic Feature-Sliced Design structure. Layer responsibilities, dependency
+rules, and the migration guard are documented in [docs/frontend-architecture.md](docs/frontend-architecture.md).
+
 ## SnapGIS authentication
 
 Set the backend base URL in a local environment file:
@@ -116,7 +121,6 @@ export default defineConfig([
   },
 ]);
 ```
-
 
 ## Basemap selector
 

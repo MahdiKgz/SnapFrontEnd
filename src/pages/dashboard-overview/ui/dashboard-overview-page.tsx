@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/shared/ui/button";
-import { useGetUserDashboardSummaryQuery } from "@features/files";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { useGetUserDashboardSummaryQuery } from "@features/files";
 
 const formatCount = (value: number) => value.toLocaleString("fa-IR");
 
