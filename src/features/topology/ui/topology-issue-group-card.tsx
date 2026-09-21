@@ -1,4 +1,4 @@
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip } from "@/shared/ui/tooltip";
 import { AlertTriangle, Braces, Layers3 } from "lucide-react";
 
 import type { TopologyIssueGroup } from "../model/types";

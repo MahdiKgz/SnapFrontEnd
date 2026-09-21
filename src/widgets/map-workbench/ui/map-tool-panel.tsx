@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { ThemeToggle } from "@/features/theme/ui/theme-toggle";
+import { ThemeToggle } from "@features/theme";
 import { BadgeCheck, BrainCircuit, LayoutDashboard, PanelLeftClose, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 

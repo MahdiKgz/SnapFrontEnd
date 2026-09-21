@@ -1,5 +1,6 @@
 export {
   DEFAULT_FILES_LIMIT,
+  filesApi,
   useDeleteUserFileMutation,
   useGetUserFileQuery,
   useGetUserFilesQuery,
@@ -12,5 +13,5 @@ export type {
   UserFileStatus,
   UserFileSummary,
 } from "./model/types";
-export { DashboardOverview } from "./ui/dashboard-overview";
-export { FileManagementDashboard } from "./ui/file-management-dashboard";
+export { EMPTY_FILE_FILTERS, FileListToolbar } from "./ui/file-list-toolbar";
+export type { FileFilterValues } from "./ui/file-list-toolbar";

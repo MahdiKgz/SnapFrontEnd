@@ -1,23 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { MapCanvas, useMapLibreMap } from "@/entities/map";
-import { BasemapPicker } from "@/features/basemap/ui/basemap-picker";
-import { FeatureInspectionPanel } from "@/features/feature-inspection/ui/feature-inspection-panel";
-import { useGetUserFileQuery } from "@/features/files";
-import { MapMeasurementTools } from "@/features/map-measurement/ui/map-measurement-tools";
-import { useMapPreview } from "@/features/map-preview";
+import { MapCanvas, useMapLibreMap } from "@entities/map";
+import { BasemapPicker } from "@features/basemap";
+import { FeatureInspectionPanel } from "@features/feature-inspection";
+import { useGetUserFileQuery } from "@features/files";
+import { MapMeasurementTools } from "@features/map-measurement";
+import { useMapPreview } from "@features/map-preview";
 import {
+  CadImportNotice,
   TopologyForm,
   type TopologyUploadData,
   useLazyGetHealedOutputQuery,
   useLazyGetOriginalInputQuery,
-  useTopologyResultsMap,
-} from "@/features/topology";
-import {
   useManualReviewMarkers,
   useOriginalGeometryOverlay,
-} from "@/features/topology/model/use-healed-review-map";
-import { CadImportNotice } from "@/features/topology/ui/cad-import-notice";
+  useTopologyResultsMap,
+} from "@features/topology";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import { AlertTriangle, Eye, EyeOff, LoaderCircle, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";

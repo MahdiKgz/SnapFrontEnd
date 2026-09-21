@@ -1,6 +1,6 @@
 import { type RefObject, useState } from "react";
 
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip } from "@/shared/ui/tooltip";
 import { LandPlot, LoaderCircle, RotateCcw, Ruler, SquareDashed, X } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 

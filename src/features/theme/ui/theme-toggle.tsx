@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
-import { Tooltip } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/cn";
+import { Tooltip } from "@/shared/ui/tooltip";
 import { Moon, Sun } from "lucide-react";
 
 import { getTheme, setTheme, subscribeTheme } from "../model/theme-store";

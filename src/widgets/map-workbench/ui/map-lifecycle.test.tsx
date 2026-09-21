@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import { useState } from "react";
 
-import { useMapLibreMap } from "@/entities/map/model/use-maplibre-map";
-import type { AffectedFeatureCollection } from "@/features/topology/model/types";
+import { useMapLibreMap } from "@entities/map";
+import type { AffectedFeatureCollection } from "@features/topology";
 import {
   useManualReviewMarkers,
   useOriginalGeometryOverlay,
-} from "@/features/topology/model/use-healed-review-map";
-import { useTopologyResultsMap } from "@/features/topology/model/use-topology-results-map";
+  useTopologyResultsMap,
+} from "@features/topology";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

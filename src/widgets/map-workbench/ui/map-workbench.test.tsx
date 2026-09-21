@@ -16,7 +16,7 @@ const { healedOutput, loadHealedOutput, loadOriginalInput, previewGeoJson, getFi
   previewGeoJson: vi.fn(),
 }));
 
-vi.mock("@/entities/map", () => ({
+vi.mock("@entities/map", () => ({
   MapCanvas: () => <div data-testid="map-canvas" />,
   useMapLibreMap: () => ({
     containerRef: { current: null },
@@ -33,7 +33,7 @@ vi.mock("@/entities/map", () => ({
   }),
 }));
 
-vi.mock("@/features/map-preview", () => ({
+vi.mock("@features/map-preview", () => ({
   useMapPreview: () => ({
     clearPreviewError: vi.fn(),
     isPreviewing: false,
@@ -43,26 +43,18 @@ vi.mock("@/features/map-preview", () => ({
   }),
 }));
 
-vi.mock("@/features/topology", () => ({
+vi.mock("@features/topology", () => ({
   TopologyForm: () => <div />,
   useLazyGetHealedOutputQuery: () => [loadHealedOutput, { isFetching: false }],
   useLazyGetOriginalInputQuery: () => [loadOriginalInput, { isFetching: false }],
   useUpdateManualReviewMutation: () => [vi.fn(), { isLoading: false }],
+  useManualReviewMarkers: vi.fn(),
+  useOriginalGeometryOverlay: vi.fn(),
   useTopologyResultsMap: vi.fn(),
 }));
 
-vi.mock("@/features/files", () => ({
+vi.mock("@features/files", () => ({
   useGetUserFileQuery: (...args: unknown[]) => getFile(...args),
-}));
-
-vi.mock("@/features/topology/model/use-healed-review-map", () => ({
-  getIssueCoordinate: vi.fn(),
-  useManualReviewMarkers: vi.fn(),
-  useOriginalGeometryOverlay: vi.fn(),
-}));
-
-vi.mock("@/features/topology/ui/map-review-panel", () => ({
-  MapReviewPanel: () => <div data-testid="review-panel" />,
 }));
 
 describe("MapWorkbench saved healed output", () => {

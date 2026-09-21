@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip } from "@/shared/ui/tooltip";
 import { HealedExportButton } from "@/features/conversion/ui/healed-export-button";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import {

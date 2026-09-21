@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import authReducer from "@/features/auth/model/auth-slice";
-import type { AuthState } from "@/features/auth/model/auth-slice";
+import { authReducer } from "@features/auth";
+import type { AuthState } from "@features/auth";
 import { configureStore } from "@reduxjs/toolkit";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
@@ -11,7 +11,7 @@ import Header from "./Header";
 
 const { revokeSession } = vi.hoisted(() => ({ revokeSession: vi.fn() }));
 
-vi.mock("@/features/auth/api/auth-api", () => ({
+vi.mock("@features/auth/api/auth-api", () => ({
   useLogoutMutation: () => [revokeSession, { isLoading: false }],
 }));
 

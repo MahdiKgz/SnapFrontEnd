@@ -1,25 +1,12 @@
 import { StrictMode } from "react";
-
 import { createRoot } from "react-dom/client";
 
-import { Provider } from "react-redux";
-import { RouterProvider } from "react-router-dom";
+import { App } from "@app/app";
 
-import { appRouter } from "./app/routes/app-router.tsx";
-import { store } from "./app/store";
-import { AuthSessionManager } from "./features/auth/ui/auth-session-manager.tsx";
-import { ThemeSync } from "./features/theme/ui/theme-sync.tsx";
-import { HealingSyncManager } from "./features/topology/ui/healing-sync-manager.tsx";
-import "./index.css";
+import "@app/styles/index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeSync />
-    <Provider store={store}>
-      <HealingSyncManager />
-      <AuthSessionManager>
-        <RouterProvider router={appRouter} />
-      </AuthSessionManager>
-    </Provider>
+    <App />
   </StrictMode>,
 );

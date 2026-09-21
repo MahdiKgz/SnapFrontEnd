@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -10,10 +10,9 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { useLogoutMutation } from "@/features/auth/api/auth-api";
-import { logout } from "@/features/auth/model/auth-slice";
-import { ThemeToggle } from "@/features/theme/ui/theme-toggle";
+} from "@/shared/ui/navigation-menu";
+import { logout, useLogoutMutation } from "@features/auth";
+import { ThemeToggle } from "@features/theme";
 import { ChevronDown, LayoutDashboard, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 

@@ -44,12 +44,6 @@ export function useMapLibreMap() {
     map.once("load", markMapReady);
 
     map.addControl(new maplibregl.NavigationControl(), "top-left");
-    map.addControl(
-      new maplibregl.AttributionControl({
-        compact: true,
-      }),
-      "bottom-left",
-    );
 
     mapRef.current = map;
 

@@ -1,4 +1,4 @@
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip } from "@/shared/ui/tooltip";
 import { Popover } from "@base-ui/react/popover";
 import { Settings, X } from "lucide-react";
 
