@@ -46,6 +46,12 @@ shown in the panel. When the worker completes, the client fetches
 GeoJSON, displays a completion notice, and enables the attachment download at
 `GET /heal/:jobId/download`.
 
+Saved files opened from the dashboard use the same output preview endpoint.
+Map previews return GeoJSON through the authenticated API, including files stored
+in object storage. The map renders the file's actual polygons, lines, and points;
+review issues do not create centroid markers. An issue link focuses the full
+feature extent after its geometry has loaded.
+
 Both API variables default to `http://localhost:3000/api` when they are not set.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

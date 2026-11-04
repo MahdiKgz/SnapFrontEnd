@@ -1,16 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { RefObject } from "react";
 
 import { getGeoJsonBounds } from "@/shared/lib/geo";
-import type {
-  Feature,
-  FeatureCollection,
-  GeoJsonProperties,
-  Geometry,
-  Point,
-  Position,
-} from "geojson";
-import type { MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
+import type { Feature, FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
+import type { Map as MapLibreMap } from "maplibre-gl";
 
 import type { TopologyIssue } from "./types";
 
@@ -18,18 +11,16 @@ const ORIGINAL_SOURCE_ID = "snapgis-original-geometry";
 const ORIGINAL_FILL_ID = "snapgis-original-fill";
 const ORIGINAL_LINE_ID = "snapgis-original-line";
 const ORIGINAL_POINT_ID = "snapgis-original-point";
-const REVIEW_SOURCE_ID = "snapgis-manual-review";
-const REVIEW_LAYER_ID = "snapgis-manual-review-markers";
 
 const featureIndexes = new WeakMap<
   FeatureCollection<Geometry, GeoJsonProperties>,
   Map<number, Feature<Geometry, GeoJsonProperties>>
 >();
 
-export function getIssueCoordinate(
+function getIssueFeature(
   issue: TopologyIssue,
   source: FeatureCollection<Geometry, GeoJsonProperties>,
-): Position | null {
+) {
   let indexes = featureIndexes.get(source);
   if (!indexes) {
     indexes = new Map(
@@ -40,31 +31,7 @@ export function getIssueCoordinate(
     );
     featureIndexes.set(source, indexes);
   }
-  const feature = indexes.get(issue.featureIndex);
-  if (!feature?.geometry) return null;
-  let cursor: unknown = "coordinates" in feature.geometry ? feature.geometry.coordinates : null;
-  for (const segment of issue.location.coordinatePath ?? []) {
-    if (!Array.isArray(cursor) || !Number.isInteger(segment)) {
-      cursor = null;
-      break;
-    }
-    cursor = cursor[segment];
-  }
-  if (
-    Array.isArray(cursor) &&
-    cursor.length >= 2 &&
-    typeof cursor[0] === "number" &&
-    typeof cursor[1] === "number"
-  ) {
-    return [cursor[0], cursor[1]];
-  }
-
-  const featureCollection: FeatureCollection<Geometry, GeoJsonProperties> = {
-    type: "FeatureCollection",
-    features: [feature],
-  };
-  const bounds = getGeoJsonBounds(featureCollection);
-  return bounds ? [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2] : null;
+  return indexes.get(issue.featureIndex);
 }
 
 export function useOriginalGeometryOverlay({
@@ -125,110 +92,29 @@ export function useOriginalGeometryOverlay({
   }, [data, isMapReady, mapRef, visible]);
 }
 
-export function useManualReviewMarkers({
-  interactive = true,
+export function useReviewIssueFocus({
   data,
   isMapReady,
   issues,
   mapRef,
-  onSelectIssue,
   selectedIssueIndex,
 }: {
-  interactive?: boolean;
   data: FeatureCollection<Geometry, GeoJsonProperties> | null;
   isMapReady: boolean;
   issues: TopologyIssue[];
   mapRef: RefObject<MapLibreMap | null>;
-  onSelectIssue: (issueIndex: number) => void;
   selectedIssueIndex: number | null;
 }) {
-  const interactiveRef = useRef(interactive);
-  useEffect(() => {
-    interactiveRef.current = interactive;
-  }, [interactive]);
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !isMapReady || !data) return;
-    const features = issues.flatMap<Feature<Point, GeoJsonProperties>>((issue, issueIndex) => {
-      if (issue.disposition !== "ManualReview") return [];
-      const coordinate = getIssueCoordinate(issue, data);
-      return coordinate
-        ? [
-            {
-              type: "Feature",
-              geometry: { type: "Point", coordinates: coordinate },
-              properties: { issueIndex: issue.issueIndex ?? issueIndex, code: issue.code },
-            },
-          ]
-        : [];
-    });
-    map.addSource(REVIEW_SOURCE_ID, {
-      type: "geojson",
-      data: { type: "FeatureCollection", features },
-    });
-    map.addLayer({
-      id: REVIEW_LAYER_ID,
-      type: "circle",
-      source: REVIEW_SOURCE_ID,
-      paint: {
-        "circle-color": ["case", ["==", ["get", "issueIndex"], -1], "#ef4444", "#f59e0b"],
-        "circle-radius": ["case", ["==", ["get", "issueIndex"], -1], 9, 7],
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": 2,
-      },
-    });
-    const selectMarker = (event: MapLayerMouseEvent) => {
-      if (!interactiveRef.current) return;
-      const issueIndex = Number(event.features?.[0]?.properties?.issueIndex);
-      if (Number.isSafeInteger(issueIndex)) onSelectIssue(issueIndex);
-    };
-    const showPointer = () => {
-      if (!interactiveRef.current) return;
-      map.getCanvas().style.cursor = "pointer";
-    };
-    const hidePointer = () => {
-      if (!interactiveRef.current) return;
-      map.getCanvas().style.cursor = "";
-    };
-    map.on("click", REVIEW_LAYER_ID, selectMarker);
-    map.on("mouseenter", REVIEW_LAYER_ID, showPointer);
-    map.on("mouseleave", REVIEW_LAYER_ID, hidePointer);
-
-    return () => {
-      map.off("click", REVIEW_LAYER_ID, selectMarker);
-      map.off("mouseenter", REVIEW_LAYER_ID, showPointer);
-      map.off("mouseleave", REVIEW_LAYER_ID, hidePointer);
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- Check live map ownership, not a captured DOM ref.
-      if (mapRef.current !== map) return;
-      if (map.getLayer(REVIEW_LAYER_ID)) map.removeLayer(REVIEW_LAYER_ID);
-      if (map.getSource(REVIEW_SOURCE_ID)) map.removeSource(REVIEW_SOURCE_ID);
-    };
-  }, [data, isMapReady, issues, mapRef, onSelectIssue]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !isMapReady || !map.getLayer(REVIEW_LAYER_ID)) return;
-    map.setPaintProperty(REVIEW_LAYER_ID, "circle-color", [
-      "case",
-      ["==", ["get", "issueIndex"], selectedIssueIndex ?? -1],
-      "#ef4444",
-      "#f59e0b",
-    ]);
-    map.setPaintProperty(REVIEW_LAYER_ID, "circle-radius", [
-      "case",
-      ["==", ["get", "issueIndex"], selectedIssueIndex ?? -1],
-      9,
-      7,
-    ]);
-  }, [data, isMapReady, issues, mapRef, selectedIssueIndex]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !data || selectedIssueIndex === null) return;
+    if (!map || !isMapReady || !data || selectedIssueIndex === null) return;
     const issue = issues.find((item, index) => (item.issueIndex ?? index) === selectedIssueIndex);
     if (!issue) return;
-    const coordinate = getIssueCoordinate(issue, data);
-    if (!coordinate) return;
-    map.flyTo({ center: [coordinate[0]!, coordinate[1]!], zoom: 17, duration: 900 });
-  }, [data, issues, mapRef, selectedIssueIndex]);
+    const feature = getIssueFeature(issue, data);
+    if (!feature) return;
+    const bounds = getGeoJsonBounds({ type: "FeatureCollection", features: [feature] });
+    if (!bounds) return;
+    // Review navigation moves the camera; only file geometries are rendered on the map.
+    map.fitBounds(bounds, { padding: 140, maxZoom: 17, duration: 900 });
+  }, [data, isMapReady, issues, mapRef, selectedIssueIndex]);
 }

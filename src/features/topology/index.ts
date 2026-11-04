@@ -17,11 +17,7 @@ export {
   trackHealingJob,
 } from "./model/healing-sync-slice";
 export { default as healingSyncReducer } from "./model/healing-sync-slice";
-export {
-  getIssueCoordinate,
-  useManualReviewMarkers,
-  useOriginalGeometryOverlay,
-} from "./model/use-healed-review-map";
+export { useReviewIssueFocus, useOriginalGeometryOverlay } from "./model/use-healed-review-map";
 export { useTopologyResultsMap } from "./model/use-topology-results-map";
 export type {
   AffectedFeatureCollection,

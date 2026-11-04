@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AffectedFeatureCollection } from "@features/topology";
 import {
-  useManualReviewMarkers,
   useOriginalGeometryOverlay,
+  useReviewIssueFocus,
   useTopologyResultsMap,
 } from "@features/topology";
 
@@ -63,7 +63,6 @@ vi.mock("maplibre-gl", () => ({
 const data: AffectedFeatureCollection = { type: "FeatureCollection", features: [] };
 const issues: [] = [];
 const selectedFeatureIndexes: number[] = [];
-const onSelectIssue = vi.fn();
 
 function MapWithOverlays() {
   const { containerRef, isMapReady, mapRef } = useMapLibreMap();
@@ -75,12 +74,11 @@ function MapWithOverlays() {
     selectedFeatureIndexes,
   });
   useOriginalGeometryOverlay({ data, isMapReady, mapRef, visible });
-  useManualReviewMarkers({
+  useReviewIssueFocus({
     data: visible ? data : null,
     isMapReady,
     mapRef,
     issues,
-    onSelectIssue,
     selectedIssueIndex: null,
   });
 
@@ -116,7 +114,7 @@ describe("map overlay lifecycle", () => {
     renderMapRoute();
     const firstMap = maps[0];
     act(() => firstMap.listeners.get("load")?.());
-    expect(firstMap.layers.size).toBe(10);
+    expect(firstMap.layers.size).toBe(9);
 
     fireEvent.click(screen.getByRole("link", { name: "Dashboard" }));
     expect(screen.getByRole("link", { name: "Return to map" })).toBeTruthy();
@@ -126,7 +124,7 @@ describe("map overlay lifecycle", () => {
     fireEvent.click(screen.getByRole("link", { name: "Return to map" }));
     const secondMap = maps[1];
     act(() => secondMap.listeners.get("load")?.());
-    expect(secondMap.layers.size).toBe(10);
+    expect(secondMap.layers.size).toBe(9);
     expect(secondMap.removed).toBe(false);
   });
 
@@ -134,17 +132,17 @@ describe("map overlay lifecycle", () => {
     renderMapRoute();
     const map = maps[0];
     act(() => map.listeners.get("load")?.());
-    expect(map.layers.size).toBe(10);
+    expect(map.layers.size).toBe(9);
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle overlays" }));
     expect(map.layers.size).toBe(0);
     expect(map.sources.size).toBe(0);
-    expect(map.removeLayer).toHaveBeenCalledTimes(10);
-    expect(map.removeSource).toHaveBeenCalledTimes(4);
+    expect(map.removeLayer).toHaveBeenCalledTimes(9);
+    expect(map.removeSource).toHaveBeenCalledTimes(3);
     expect(map.remove).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle overlays" }));
-    expect(map.layers.size).toBe(10);
-    expect(map.sources.size).toBe(4);
+    expect(map.layers.size).toBe(9);
+    expect(map.sources.size).toBe(3);
   });
 });

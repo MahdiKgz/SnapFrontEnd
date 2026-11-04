@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import { AlertTriangle, Eye, EyeOff, LoaderCircle, RefreshCw } from "lucide-react";
@@ -15,8 +15,8 @@ import {
   type TopologyUploadData,
   useLazyGetHealedOutputQuery,
   useLazyGetOriginalInputQuery,
-  useManualReviewMarkers,
   useOriginalGeometryOverlay,
+  useReviewIssueFocus,
   useTopologyResultsMap,
 } from "@features/topology";
 
@@ -45,24 +45,17 @@ export function MapWorkbench() {
     GeoJsonProperties
   > | null>(null);
   const [isOriginalVisible, setIsOriginalVisible] = useState(false);
-  const [reviewSelection, setReviewSelection] = useState<{ key: string; index: number } | null>(
-    null,
-  );
+  const [displayedSavedFileId, setDisplayedSavedFileId] = useState<string | null>(null);
   const requestedHealedFileId = useRef<string | null>(null);
   const [loadHealedOutput, healedOutputRequest] = useLazyGetHealedOutputQuery();
   const [loadOriginalInput, originalRequest] = useLazyGetOriginalInputQuery();
   const [originalError, setOriginalError] = useState(false);
   const healedFileId = searchParams.get("healedFile");
   const requestedIssue = searchParams.get("issue");
-  const reviewKey = `${healedFileId}:${requestedIssue}`;
   const selectedIssueIndex =
-    reviewSelection?.key === reviewKey
-      ? reviewSelection.index
-      : requestedIssue &&
-          /^\d+$/.test(requestedIssue) &&
-          Number.isSafeInteger(Number(requestedIssue))
-        ? Number(requestedIssue)
-        : null;
+    requestedIssue && /^\d+$/.test(requestedIssue) && Number.isSafeInteger(Number(requestedIssue))
+      ? Number(requestedIssue)
+      : null;
   const fileDetailRequest = useGetUserFileQuery(healedFileId ?? "", {
     skip: !healedFileId,
   });
@@ -78,26 +71,17 @@ export function MapWorkbench() {
     [fileDetail?.report?.issues],
   );
 
-  const selectReviewIssue = useCallback(
-    (issueIndex: number) => {
-      setReviewSelection({ key: reviewKey, index: issueIndex });
-    },
-    [reviewKey],
-  );
-
   useOriginalGeometryOverlay({
     data: originalGeoJson,
     isMapReady,
     mapRef,
     visible: isOriginalVisible,
   });
-  useManualReviewMarkers({
-    interactive: !isMeasuring,
+  useReviewIssueFocus({
     data: fileDetail?.report?.affectedFeatureCollection ?? null,
-    isMapReady,
+    isMapReady: isMapReady && savedFileIsReady && displayedSavedFileId === healedFileId,
     issues: reviewIssues,
     mapRef,
-    onSelectIssue: selectReviewIssue,
     selectedIssueIndex,
   });
 
@@ -126,6 +110,7 @@ export function MapWorkbench() {
 
     requestedHealedFileId.current = healedFileId;
     setHealedFileLoadError(false);
+    setDisplayedSavedFileId(null);
     setOriginalGeoJson(null);
     setIsOriginalVisible(false);
     setIsHealedResultVisible(false);
@@ -141,8 +126,10 @@ export function MapWorkbench() {
         if (cancelled) return;
         setTopologyResult(null);
         setSelectedFeatureIndexes([]);
-        setIsHealedResultVisible(savedFileIsHealed);
         await previewGeoJson(output);
+        if (cancelled) return;
+        setIsHealedResultVisible(savedFileIsHealed);
+        setDisplayedSavedFileId(healedFileId);
       })
       .catch(() => {
         if (!cancelled) setHealedFileLoadError(true);
@@ -294,8 +281,8 @@ export function MapWorkbench() {
             }}
             onHealingComplete={async (output) => {
               setSelectedFeatureIndexes([]);
-              setIsHealedResultVisible(true);
               await previewGeoJson(output);
+              setIsHealedResultVisible(true);
             }}
             onSelectFeatures={setSelectedFeatureIndexes}
             previewError={previewError}

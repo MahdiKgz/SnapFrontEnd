@@ -50,7 +50,7 @@ vi.mock("@features/topology", () => ({
   useLazyGetHealedOutputQuery: () => [loadHealedOutput, { isFetching: false }],
   useLazyGetOriginalInputQuery: () => [loadOriginalInput, { isFetching: false }],
   useUpdateManualReviewMutation: () => [vi.fn(), { isLoading: false }],
-  useManualReviewMarkers: vi.fn(),
+  useReviewIssueFocus: vi.fn(),
   useOriginalGeometryOverlay: vi.fn(),
   useTopologyResultsMap: vi.fn(),
 }));
