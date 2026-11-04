@@ -1,6 +1,8 @@
 import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
 
 import { AdminPlansPage } from "@pages/admin-plans";
+import { AdminReportsPage } from "@pages/admin-reports";
+import { AdminUsersPage } from "@pages/admin-users";
 import { ArticlePage } from "@pages/article";
 import { BlogPage } from "@pages/blog";
 import { CompanyPage } from "@pages/company";
@@ -10,7 +12,6 @@ import { DashboardFilesPage } from "@pages/dashboard-files";
 import { DashboardOverviewPage } from "@pages/dashboard-overview";
 import { HomePage } from "@pages/home";
 import { LoginPage } from "@pages/login";
-import { ManagementPlaceholder } from "@pages/management-placeholder";
 import { MapPage } from "@pages/map";
 import { PricingPage } from "@pages/pricing";
 import { RegisterPage } from "@pages/register";
@@ -124,9 +125,9 @@ export const appRouter = createBrowserRouter([
         ),
         children: [
           { index: true, element: <Navigate to="users" replace /> },
-          { path: "users", element: <ManagementPlaceholder title="مدیریت کاربران" /> },
+          { path: "users", element: <AdminUsersPage /> },
           { path: "plans", element: <AdminPlansPage /> },
-          { path: "reports", element: <ManagementPlaceholder title="گزارش‌های مدیریتی" /> },
+          { path: "reports", element: <AdminReportsPage /> },
         ],
       },
       {

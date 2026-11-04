@@ -160,3 +160,22 @@ target format/CRS blank preserves them. KML/DWG/DGN are not part of this utility
 initial conversion format set.
 
 The UI uses no payment service, map rendering, healing SSE, or manual-review UI.
+
+## Administrator workspace
+
+`/dashboard/admin/users` provides account search, role/plan filters, pagination,
+name/mobile editing, writer access and an activity dialog with the latest retained
+files. Persian and Arabic phone digits are accepted. A `?user=UUID` link opens
+that account's activity directly. Plan assignment remains in
+`/dashboard/admin/plans`. These pages and APIs require the administrator role.
+
+`/dashboard/admin/reports` reads actual system metrics from
+`GET /api/business/admin/reports`. UTC date ranges are inclusive and bounded to
+366 days. Charts, current processing statuses and daily CSV exports use upload
+dates, include deleted-upload history, and do not imply completion-event times.
+Account/company/plan totals are current global snapshots. The failure table shows
+only retained failed files, and links to account activity. No file contents or
+new account creation/deletion/suspension controls are exposed.
+
+Apply the backend's additive report-date index migration using `pnpm db:deploy`
+before rollout. Backend API details are in `src/docs/Admin_Management.md`.

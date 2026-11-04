@@ -5,6 +5,10 @@ export {
   useGetBusinessPlansQuery,
   useGetCompanyQuery,
   useGetPlanUsersQuery,
+  useGetAdminUsersQuery,
+  useGetAdminUserQuery,
+  useUpdateAdminUserMutation,
+  useGetSystemReportsQuery,
   useRemoveColleagueMutation,
   useRenameCompanyMutation,
   useRespondCompanyInvitationMutation,
@@ -12,5 +16,13 @@ export {
 } from "./api/business-api";
 export { AddColleagueDialog } from "./ui/add-colleague-dialog";
 export { BusinessMessage, ConfirmBusinessAction } from "./ui/business-feedback";
-export type { BusinessContext, PlanCode, PlanUsers } from "./model/types";
+export type {
+  AdminUser,
+  AdminUsers,
+  AdminUserDetail,
+  SystemReports,
+  BusinessContext,
+  PlanCode,
+  PlanUsers,
+} from "./model/types";
 export { businessError, count } from "./model/types";
