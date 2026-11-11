@@ -1,5 +1,6 @@
 import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
 
+import { AccountSecurityPage } from "@pages/account-security";
 import { AdminPlansPage } from "@pages/admin-plans";
 import { AdminReportsPage } from "@pages/admin-reports";
 import { AdminUsersPage } from "@pages/admin-users";
@@ -13,6 +14,7 @@ import { DashboardOverviewPage } from "@pages/dashboard-overview";
 import { HomePage } from "@pages/home";
 import { LoginPage } from "@pages/login";
 import { MapPage } from "@pages/map";
+import { ForgotPasswordPage, ResetPasswordPage } from "@pages/password-recovery";
 import { PricingPage } from "@pages/pricing";
 import { RegisterPage } from "@pages/register";
 import { WriterArticlesPage } from "@pages/writer-articles";
@@ -67,12 +69,15 @@ export const appRouter = createBrowserRouter([
         path: "/login",
         element: <LoginPage />,
       },
+      { path: "/auth/forgot", element: <ForgotPasswordPage /> },
       {
         path: "/register",
         element: <RegisterPage />,
       },
     ],
   },
+
+  { element: <AuthLayout />, children: [{ path: "/auth/reset", element: <ResetPasswordPage /> }] },
 
   {
     path: "/auth",
@@ -104,6 +109,7 @@ export const appRouter = createBrowserRouter([
         element: <DashboardFilesPage />,
       },
       { path: "company", element: <CompanyPage /> },
+      { path: "security", element: <AccountSecurityPage /> },
       {
         path: "convert",
         element: <ConversionPage />,

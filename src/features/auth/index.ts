@@ -1,4 +1,14 @@
-export { authApi, useLoginMutation, useLogoutMutation, useRegisterMutation } from "./api/auth-api";
+export {
+  authApi,
+  useAccountEmailQuery,
+  useForgotPasswordMutation,
+  useLoginMutation,
+  useLogoutMutation,
+  useRegisterMutation,
+  useRequestEmailVerificationMutation,
+  useResetPasswordMutation,
+  useVerifyEmailMutation,
+} from "./api/auth-api";
 export { getAuthErrorMessage } from "./lib/get-auth-error-message";
 export { getPostAuthRedirect } from "./lib/post-auth-redirect";
 export { logout, setCredentials } from "./model/auth-slice";

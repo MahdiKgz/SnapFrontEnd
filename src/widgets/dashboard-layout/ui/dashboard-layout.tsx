@@ -8,6 +8,7 @@ import {
   LogOut,
   Map,
   Newspaper,
+  ShieldCheck,
   Tags,
   User,
   Users,
@@ -36,6 +37,7 @@ const NAVIGATION_SECTIONS = [
       { path: "/dashboard/convert", title: "تبدیل فرمت و مختصات", icon: ArrowLeftRight },
       { path: "/map", title: "میز کار نقشه", icon: Map },
       { path: "/dashboard/company", title: "پلن و شرکت", icon: Building2 },
+      { path: "/dashboard/security", title: "امنیت حساب", icon: ShieldCheck },
     ],
   },
   {

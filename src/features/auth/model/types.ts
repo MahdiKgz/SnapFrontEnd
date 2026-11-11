@@ -22,3 +22,9 @@ export interface LoginRequest {
 export interface RegisterRequest extends LoginRequest {
   name: string;
 }
+
+export interface AccountEmail {
+  email: string | null;
+  emailVerifiedAt: string | null;
+  pendingEmail: string | null;
+}

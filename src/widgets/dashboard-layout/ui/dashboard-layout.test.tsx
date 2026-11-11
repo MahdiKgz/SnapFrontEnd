@@ -43,7 +43,10 @@ describe("dashboard navigation by role", () => {
     (...roles) => {
       const nav = renderSidebar(roles);
       expect(nav.getByRole("heading", { name: "فضای کاری" })).toBeTruthy();
-      expect(nav.getAllByRole("link")).toHaveLength(5);
+      expect(nav.getAllByRole("link")).toHaveLength(6);
+      expect(nav.getByRole("link", { name: "امنیت حساب" }).getAttribute("href")).toBe(
+        "/dashboard/security",
+      );
       expect(nav.getByLabelText("۱ دعوت همکاری")).toBeTruthy();
       expect(nav.getByRole("link", { name: "تبدیل فرمت و مختصات" }).getAttribute("href")).toBe(
         "/dashboard/convert",
