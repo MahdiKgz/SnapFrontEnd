@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { BadgeCheck, BrainCircuit, LayoutDashboard, PanelLeftClose, Wrench } from "lucide-react";
+import { BrainCircuit, Images, LayoutDashboard, PanelLeftClose, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { ThemeToggle } from "@features/theme";
@@ -10,7 +10,7 @@ import { MAP_TOOLS, type MapToolId } from "../model/map-tools";
 const TOOL_ICONS = {
   topology: Wrench,
   "smart-analysis": BrainCircuit,
-  "layer-quality": BadgeCheck,
+  "spatial-images": Images,
 } satisfies Record<MapToolId, typeof Wrench>;
 
 interface MapToolPanelProps {

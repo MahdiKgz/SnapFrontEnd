@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import { AlertTriangle, Eye, EyeOff, LoaderCircle, RefreshCw } from "lucide-react";
@@ -28,6 +28,10 @@ import { MapToolPanel } from "./map-tool-panel";
 import { PointerCoordinate } from "./pointer-coordinate";
 import { ToolPlaceholder } from "./tool-placeholder";
 
+const SpatialImagesPanel = lazy(async () => ({
+  default: (await import("@features/business/spatial-images")).SpatialImagesPanel,
+}));
+
 interface ReviewTarget {
   jobId: string;
   groupId: string;
@@ -50,6 +54,7 @@ export function MapWorkbench() {
   } = useMapPreview(mapRef, isMapReady);
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [hasOpenedSpatialImages, setHasOpenedSpatialImages] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [topologyResult, setTopologyResult] = useState<TopologyUploadData | null>(null);
   const [selectedFeatureIndexes, setSelectedFeatureIndexes] = useState<number[]>([]);
@@ -254,6 +259,7 @@ export function MapWorkbench() {
   };
 
   const selectTool = (tool: MapToolId) => {
+    if (tool === "spatial-images") setHasOpenedSpatialImages(true);
     setActiveTool(tool);
     setIsPanelOpen(true);
   };
@@ -439,8 +445,24 @@ export function MapWorkbench() {
           />
         </div>
 
-        {activeTool === "smart-analysis" && <ToolPlaceholder tool="smart-analysis" />}
-        {activeTool === "layer-quality" && <ToolPlaceholder tool="layer-quality" />}
+        {activeTool === "smart-analysis" && <ToolPlaceholder />}
+        {hasOpenedSpatialImages && (
+          <div hidden={activeTool !== "spatial-images"}>
+            <Suspense
+              fallback={
+                <p role="status" className="text-sm">
+                  در حال دریافت تصاویر…
+                </p>
+              }
+            >
+              <SpatialImagesPanel
+                mapRef={mapRef}
+                isMapReady={isMapReady}
+                visible={activeTool === "spatial-images" && isPanelOpen && !editorActive}
+              />
+            </Suspense>
+          </div>
+        )}
       </MapToolPanel>
     </div>
   );

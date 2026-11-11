@@ -2,6 +2,7 @@ import { topologyApi } from "@/features/topology/api/topology-api";
 
 import { type AuthState, setCredentials } from "@features/auth";
 
+import type { SpatialImage, SpatialImageList, SpatialImageTicket } from "../model/spatial-images";
 import type {
   AdminUser,
   AdminUserDetail,
@@ -16,6 +17,8 @@ import type {
 } from "../model/types";
 
 type Envelope<T> = { success: boolean; data: T };
+const spatialImagesPath = "/business/company/spatial-images";
+const spatialImagesTag = { type: "Business", id: "SPATIAL_IMAGES" } as const;
 const syncCurrentUser = (
   userId: string,
   changes: Partial<Pick<NonNullable<AuthState["user"]>, "name" | "phone" | "roles">>,
@@ -35,6 +38,29 @@ export const businessApi = enhanced.injectEndpoints({
     getBusinessContext: builder.query<Envelope<BusinessContext>, void>({
       query: () => "/business/me",
       providesTags: [{ type: "Business", id: "CONTEXT" }],
+    }),
+    getSpatialImages: builder.query<Envelope<SpatialImageList>, void>({
+      query: () => spatialImagesPath,
+      providesTags: [spatialImagesTag],
+    }),
+    reserveSpatialImage: builder.mutation<
+      Envelope<SpatialImageTicket>,
+      { fileName: string; size: number }
+    >({
+      query: (body) => ({ url: `${spatialImagesPath}/presign`, method: "POST", body }),
+      invalidatesTags: [spatialImagesTag],
+    }),
+    completeSpatialImage: builder.mutation<Envelope<SpatialImage>, string>({
+      query: (id) => ({ url: `${spatialImagesPath}/${id}/complete`, method: "POST" }),
+      invalidatesTags: [spatialImagesTag],
+    }),
+    getSpatialImagePreview: builder.query<Envelope<{ url: string; expiresAt: string }>, string>({
+      query: (id) => `${spatialImagesPath}/${id}/preview`,
+      keepUnusedDataFor: 0,
+    }),
+    deleteSpatialImage: builder.mutation<Envelope<{ id: string }>, string>({
+      query: (id) => ({ url: `${spatialImagesPath}/${id}`, method: "DELETE" }),
+      invalidatesTags: [spatialImagesTag],
     }),
     getCompany: builder.query<Envelope<CompanyDashboard>, void>({
       query: () => "/business/company",
@@ -154,6 +180,11 @@ export const businessApi = enhanced.injectEndpoints({
 export const {
   useGetBusinessPlansQuery,
   useGetBusinessContextQuery,
+  useGetSpatialImagesQuery,
+  useReserveSpatialImageMutation,
+  useCompleteSpatialImageMutation,
+  useLazyGetSpatialImagePreviewQuery,
+  useDeleteSpatialImageMutation,
   useGetCompanyQuery,
   useLookupColleagueMutation,
   useAddColleagueMutation,
