@@ -4,7 +4,7 @@ import { Label } from "@/shared/ui/label";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import { FileCode2, UploadCloud, X } from "lucide-react";
 
-import type { TopologyUploadData } from "../model/types";
+import type { TopologyIssueGroup, TopologyUploadData } from "../model/types";
 import { useTopologyUpload } from "../model/use-topology-upload";
 import { ShapefileHelp } from "./shapefile-help";
 import { TopologyResults } from "./topology-results";
@@ -17,13 +17,15 @@ interface TopologyFormProps {
   onHealingComplete: (
     output: FeatureCollection<Geometry, GeoJsonProperties>,
   ) => Promise<void> | void;
+  onReviewGroup?: (group: TopologyIssueGroup) => void;
+  manualParcelIndexes?: number[];
   onSelectFeatures: (featureIndexes: number[]) => void;
   previewError: string;
   removePreview: () => void;
   result: TopologyUploadData | null;
 }
 
-const ACCEPTED_FILE_TYPES = ".json,.geojson,.kml,.kmz,.shp,.zip,.dwg,.dgn";
+const ACCEPTED_FILE_TYPES = ".json,.geojson,.kml,.kmz,.shp,.zip,.dwg,.dgn,.dxf";
 
 export function TopologyForm({
   clearPreviewError,
@@ -32,6 +34,8 @@ export function TopologyForm({
   onAnalysisReset,
   onHealingComplete,
   onSelectFeatures,
+  onReviewGroup,
+  manualParcelIndexes,
   previewError,
   removePreview,
   result,
@@ -68,6 +72,8 @@ export function TopologyForm({
         data={result}
         onHealingComplete={onHealingComplete}
         onSelectFeatures={onSelectFeatures}
+        onReviewGroup={onReviewGroup}
+        manualParcelIndexes={manualParcelIndexes}
         onReset={resetAnalysis}
       />
     );
@@ -178,7 +184,7 @@ export function TopologyForm({
             </span>
             <span className="text-xs font-semibold text-foreground">انتخاب یا رها کردن فایل</span>
             <span className="mt-1 text-[10px] text-muted-foreground" dir="ltr">
-              JSON, GeoJSON, KML, KMZ, SHP, ZIP, DWG, DGN
+              JSON, GeoJSON, KML, KMZ, SHP, ZIP, DWG, DGN, DXF
             </span>
           </button>
         )}

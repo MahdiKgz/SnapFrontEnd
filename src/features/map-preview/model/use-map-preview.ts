@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 import { getGeoJsonBounds } from "@/shared/lib/geo";
@@ -14,7 +14,26 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>, isMapReady:
   const [previewError, setPreviewError] = useState("");
   const [isPreviewing, setIsPreviewing] = useState(false);
 
+  const previewData = useRef<FeatureCollection | null>(null);
+  const hiddenIndexes = useRef<ReadonlySet<number>>(new Set());
+  const visiblePreview = useCallback((data: FeatureCollection) => {
+    if (!hiddenIndexes.current.size) return data;
+    return {
+      ...data,
+      features: data.features.filter((_, index) => !hiddenIndexes.current.has(index)),
+    };
+  }, []);
+  const setPreviewMask = useCallback(
+    (indexes: number[]) => {
+      hiddenIndexes.current = new Set(indexes);
+      const source = mapRef.current?.getSource<GeoJSONSource>(SOURCE_ID);
+      if (source && previewData.current) source.setData(visiblePreview(previewData.current));
+    },
+    [mapRef, visiblePreview],
+  );
+
   const removePreview = useCallback(() => {
+    previewData.current = null;
     const map = mapRef.current;
     if (!map) return;
 
@@ -26,7 +45,7 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>, isMapReady:
   }, [mapRef]);
 
   const displayGeoJson = useCallback(
-    async (geoJson: FeatureCollection<Geometry, GeoJsonProperties>) => {
+    async (geoJson: FeatureCollection<Geometry, GeoJsonProperties>, fitToFile: boolean) => {
       const map = mapRef.current;
 
       if (!map) {
@@ -46,14 +65,16 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>, isMapReady:
         });
       }
 
+      previewData.current = geoJson;
+      const visible = visiblePreview(geoJson);
       const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
 
       if (source) {
-        source.setData(geoJson);
+        source.setData(visible);
       } else {
         map.addSource(SOURCE_ID, {
           type: "geojson",
-          data: geoJson,
+          data: visible,
         });
 
         map.addLayer({
@@ -93,6 +114,7 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>, isMapReady:
         });
       }
 
+      if (!fitToFile) return;
       const bounds = getGeoJsonBounds(geoJson);
       if (!bounds) {
         throw new Error("The file does not contain displayable coordinates.");
@@ -104,15 +126,15 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>, isMapReady:
         maxZoom: 16,
       });
     },
-    [isMapReady, mapRef],
+    [isMapReady, mapRef, visiblePreview],
   );
 
   const previewGeoJson = useCallback(
-    async (geoJson: FeatureCollection<Geometry, GeoJsonProperties>) => {
+    async (geoJson: FeatureCollection<Geometry, GeoJsonProperties>, fitToFile = true) => {
       setPreviewError("");
       setIsPreviewing(true);
       try {
-        await displayGeoJson(geoJson);
+        await displayGeoJson(geoJson, fitToFile);
       } catch (error) {
         setPreviewError("نمایش فایل روی نقشه انجام نشد. ساختار داده مکانی را بررسی کنید.");
         throw error;
@@ -128,6 +150,7 @@ export function useMapPreview(mapRef: RefObject<MapLibreMap | null>, isMapReady:
     isPreviewing,
     previewError,
     previewGeoJson,
+    setPreviewMask,
     removePreview,
   };
 }

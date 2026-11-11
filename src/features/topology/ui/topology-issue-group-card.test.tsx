@@ -38,3 +38,21 @@ describe("TopologyIssueGroupCard", () => {
     expect(card.className).toContain("border-red-400");
   });
 });
+
+it("opens all parcels from the icon without opening a parcel list", () => {
+  const onReviewGroup = vi.fn();
+  const onSelect = vi.fn();
+  const { unmount } = render(
+    <TopologyIssueGroupCard
+      group={group}
+      isSelected={false}
+      onSelect={onSelect}
+      onReviewGroup={onReviewGroup}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "اصلاح دستی همهٔ عارضه‌های کارت" }));
+  expect(onReviewGroup).toHaveBeenCalledWith(group);
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(screen.queryByRole("list")).toBeNull();
+  unmount();
+});

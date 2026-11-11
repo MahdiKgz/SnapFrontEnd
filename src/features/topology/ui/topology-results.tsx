@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Tooltip } from "@/shared/ui/tooltip";
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
@@ -26,6 +26,8 @@ interface TopologyResultsProps {
     output: FeatureCollection<Geometry, GeoJsonProperties>,
   ) => Promise<void> | void;
   onReset: () => void;
+  onReviewGroup?: (group: TopologyIssueGroup) => void;
+  manualParcelIndexes?: number[];
   onSelectFeatures: (featureIndexes: number[]) => void;
 }
 
@@ -48,9 +50,33 @@ export function TopologyResults({
   onHealingComplete,
   onReset,
   onSelectFeatures,
+  onReviewGroup,
+  manualParcelIndexes,
 }: TopologyResultsProps) {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const { summary } = data.report;
+  const editableGroups = useMemo(() => {
+    const groups = new Set(
+      data.report.issues
+        .filter((issue) => issue.disposition === "ManualReview")
+        .map((issue) => `${issue.check}:${issue.code}`),
+    );
+    const polygonIndexes = new Set(
+      data.report.affectedFeatureCollection.features
+        .filter(({ geometry }) => geometry?.type === "Polygon" || geometry?.type === "MultiPolygon")
+        .map(({ snapgisFeatureIndex }) => snapgisFeatureIndex),
+    );
+    return new Set(
+      data.report.issueGroups
+        .filter(
+          (group) =>
+            (groups.has(group.groupId) || group.code === "POLYGON_OVERLAP") &&
+            group.affectedFeatureIndexes.some((index) => polygonIndexes.has(index)),
+        )
+        .map((group) => group.groupId),
+    );
+  }, [data.report]);
+  const confirmedParcels = new Set(manualParcelIndexes);
   const {
     cancelHealing,
     downloadUrl,
@@ -306,6 +332,15 @@ export function TopologyResults({
         </div>
       )}
 
+      {!isCompleted && !isHealing && confirmedParcels.size > 0 && (
+        <div className="mt-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs">
+          <p className="mb-2">
+            {confirmedParcels.size.toLocaleString("fa-IR")} اصلاح دستی در خروجی ثبت شد.
+          </p>
+          <HealedExportButton jobId={data.jobId} />
+        </div>
+      )}
+
       {(requestError || statusError || outputError || lifecycle?.status === "failed") && (
         <div
           role="alert"
@@ -338,6 +373,8 @@ export function TopologyResults({
             group={group}
             isSelected={selectedGroupId === group.groupId}
             onSelect={selectIssueGroup}
+            onReviewGroup={editableGroups.has(group.groupId) ? onReviewGroup : undefined}
+            reviewDisabled={isHealing}
           />
         ))}
       </div>

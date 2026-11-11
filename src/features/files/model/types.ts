@@ -37,6 +37,7 @@ export interface UserFileDetail extends UserFileSummary {
     error: string | null;
     result: TopologyHealResult | null;
   };
+  manualParcelIndexes?: number[];
   reviewDecisions: Record<string, ManualReviewDecision>;
 }
 

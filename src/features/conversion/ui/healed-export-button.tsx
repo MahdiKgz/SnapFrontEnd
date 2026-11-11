@@ -159,8 +159,13 @@ function ExportForm({ jobId }: { jobId: string }) {
         </div>
         {format === "dxf" && (
           <p className="rounded-lg bg-muted/50 p-3 text-xs leading-6">
-            DXF فقط هندسه را نگه می‌دارد؛ مشخصات و استایل منتقل نمی‌شوند و مرز پلیگون‌ها به خطوط
-            بسته تبدیل می‌شود.
+            مرز عارضه‌ها به‌صورت پلی‌لاین در لایهٔ اصلی CAD صادر می‌شود. می‌توانید در نرم‌افزار مقصد
+            از خطوط پلیگون بسازید.
+          </p>
+        )}
+        {format === "geojson" && (
+          <p className="text-xs leading-6 text-muted-foreground">
+            مرز پلیگون‌ها و عارضه‌های خطی به‌صورت MultiLineString ذخیره می‌شوند.
           </p>
         )}
         {format === "shapefile" && (

@@ -29,3 +29,5 @@ export type {
 export { TopologyForm } from "./ui/topology-form";
 export { CadImportNotice } from "./ui/cad-import-notice";
 export { IssueDetails } from "./ui/issue-details";
+export { ParcelEditor } from "./ui/parcel-editor";
+export type { TopologyIssue } from "./model/types";

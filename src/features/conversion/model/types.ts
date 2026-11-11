@@ -75,7 +75,8 @@ export const conversionError = (error: unknown): string => {
 export const conversionWarning: Record<string, string> = {
   FEATURE_IDS_NOT_RETAINED:
     "شناسهٔ سطح عارضهٔ GeoJSON در این فرمت منتقل نمی‌شود؛ مشخصات عارضه تابع قالب خروجی هستند.",
-  DXF_GEOMETRY_ONLY: "خروجی DXF فقط هندسه‌ها را نگه می‌دارد؛ مشخصات و استایل CAD منتقل نمی‌شوند.",
+  DXF_GEOMETRY_ONLY:
+    "خروجی DXF هندسه و لایهٔ هر عارضه را نگه می‌دارد. سایر مشخصات و استایل‌ها منتقل نمی‌شوند.",
   DXF_POLYGON_RINGS_AS_POLYLINES:
     "مرز بیرونی و حفره‌های پلیگون در DXF به صورت خط بستهٔ جداگانه ذخیره شده‌اند.",
   SHAPEFILE_FIELD_NAMES_SHORTENED:

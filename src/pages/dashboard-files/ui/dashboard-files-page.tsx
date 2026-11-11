@@ -188,6 +188,7 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
   const navigate = useNavigate();
   const { data, isError, isFetching, refetch } = useGetUserFileQuery(fileId);
   const file = data?.data;
+  const manualParcelCount = file?.manualParcelIndexes?.length ?? 0;
   const repairs = Object.entries(file?.healing.result?.repairs ?? {}).filter(
     ([, count]) => count > 0,
   );
@@ -262,8 +263,11 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
                 ) && (
                   <div className="mt-4 space-y-2 border-t border-border/60 pt-4">
                     <p className="text-xs font-bold">موارد نیازمند بررسی دستی</p>
-                    {(file.report.issues ?? []).map((issue, issueIndex) =>
-                      issue.disposition === "ManualReview" ? (
+                    {(file.report.issues ?? []).map((issue, issueIndex) => {
+                      const isParcel =
+                        issue.geometryType === "Polygon" || issue.geometryType === "MultiPolygon";
+                      const confirmed = file.manualParcelIndexes?.includes(issue.featureIndex);
+                      return issue.disposition === "ManualReview" ? (
                         <div
                           key={`${issue.code}:${issueIndex}`}
                           className="flex items-center justify-between gap-3 rounded-lg bg-amber-500/5 px-3 py-2"
@@ -283,16 +287,16 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
                             className="gap-1.5"
                             onClick={() =>
                               navigate(
-                                `/map?healedFile=${encodeURIComponent(file.id)}&issue=${issue.issueIndex ?? issueIndex}`,
+                                `/map?healedFile=${encodeURIComponent(file.id)}&issue=${issue.issueIndex ?? issueIndex}${isParcel ? "&edit=1" : ""}`,
                               )
                             }
                           >
                             <MapPinned />
-                            روی نقشه
+                            {isParcel ? (confirmed ? "ویرایش دوباره" : "اصلاح دستی") : "روی نقشه"}
                           </Button>
                         </div>
-                      ) : null,
-                    )}
+                      ) : null;
+                    })}
                   </div>
                 )}
             </section>
@@ -301,13 +305,18 @@ function FileDetailDialog({ fileId, onClose }: { fileId: string; onClose: () => 
             <section className="rounded-xl border border-border/60 p-4">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold">نتیجه ترمیم</h3>
-                {file.isHealed && <HealedExportButton jobId={file.id} />}
+                {(file.isHealed || manualParcelCount > 0) && <HealedExportButton jobId={file.id} />}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 {file.isHealed
                   ? `ترمیم در ${formatDate(file.healing.completedAt)} تکمیل شده است.`
                   : `وضعیت فعلی: ${STATUS_PRESENTATION[file.status].label}`}
               </p>
+              {manualParcelCount > 0 && (
+                <p className="mt-2 text-xs text-primary">
+                  {manualParcelCount.toLocaleString("fa-IR")} اصلاح دستی در خروجی ثبت شد.
+                </p>
+              )}
               {file.healing.error && (
                 <p className="mt-3 rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
                   {file.healing.error}

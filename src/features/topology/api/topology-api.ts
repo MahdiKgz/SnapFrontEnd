@@ -1,10 +1,17 @@
 import { createReauthenticatingBaseQuery } from "@/features/auth/api/auth-base-query";
 import { createApi } from "@reduxjs/toolkit/query/react";
-import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
+import type {
+  FeatureCollection,
+  GeoJsonProperties,
+  Geometry,
+  MultiPolygon,
+  Polygon,
+} from "geojson";
 
 import type {
   ManualReviewAction,
   ManualReviewDecision,
+  ParcelReview,
   TopologyHealResponse,
   TopologyHealStatusResponse,
   TopologyIssue,
@@ -83,7 +90,7 @@ export const topologyApi = createApi({
       query: (jobId) => `/heal/${jobId}`,
     }),
     getHealedOutput: builder.query<FeatureCollection<Geometry, GeoJsonProperties>, string>({
-      query: (path) => normalizeTopologyApiPath(path),
+      query: (path) => ({ url: normalizeTopologyApiPath(path), cache: "no-store" }),
     }),
     getOriginalInput: builder.query<FeatureCollection<Geometry, GeoJsonProperties>, string>({
       query: (jobId) => `/heal/${jobId}/original`,
@@ -95,14 +102,63 @@ export const topologyApi = createApi({
         { type: "Files", id: "LIST" },
       ],
     }),
+    getParcelReviewGroup: builder.query<
+      {
+        data: Array<
+          Omit<ParcelReview, "revision"> & {
+            featureIndex: number;
+            revision: string | null;
+            outputIndex?: number;
+            unavailable?: boolean;
+          }
+        >;
+      },
+      { jobId: string; groupId: string }
+    >({
+      query: ({ jobId, groupId }) => ({
+        url: `/heal/${encodeURIComponent(jobId)}/review-groups/${encodeURIComponent(groupId)}`,
+        cache: "no-store",
+      }),
+      keepUnusedDataFor: 0,
+    }),
+    updateParcelReviewGroup: builder.mutation<
+      { data: { featureIndexes: number[] } },
+      {
+        jobId: string;
+        groupId: string;
+        edits: Array<{ featureIndex: number; revision: string; geometry: Polygon | MultiPolygon }>;
+      }
+    >({
+      query: ({ jobId, groupId, edits }) => ({
+        url: `/heal/${encodeURIComponent(jobId)}/review-groups/${encodeURIComponent(groupId)}`,
+        method: "PATCH",
+        body: { edits },
+      }),
+      invalidatesTags: (result, _error, { jobId }) =>
+        result ? [{ type: "Files", id: jobId }] : [],
+    }),
+    getParcelReview: builder.query<{ data: ParcelReview }, { jobId: string; issueIndex: number }>({
+      query: ({ jobId, issueIndex }) => ({
+        url: `/heal/${encodeURIComponent(jobId)}/reviews/${issueIndex}`,
+        cache: "no-store",
+      }),
+      keepUnusedDataFor: 0,
+    }),
     updateManualReview: builder.mutation<
       { success: boolean; data: { issueIndex: number; decision: ManualReviewDecision } },
-      { jobId: string; issueIndex: number; action: ManualReviewAction }
+      | { jobId: string; issueIndex: number; action: Exclude<ManualReviewAction, "manual-edit"> }
+      | {
+          jobId: string;
+          issueIndex: number;
+          action: "manual-edit";
+          geometry: Polygon | MultiPolygon;
+          revision: string;
+        }
     >({
-      query: ({ jobId, issueIndex, action }) => ({
-        url: `/heal/${jobId}/reviews/${issueIndex}`,
+      query: ({ jobId, issueIndex, ...body }) => ({
+        url: `/heal/${encodeURIComponent(jobId)}/reviews/${issueIndex}`,
         method: "PATCH",
-        body: { action },
+        body,
       }),
       invalidatesTags: (_result, _error, { jobId }) => [{ type: "Files", id: jobId }],
     }),
@@ -111,6 +167,9 @@ export const topologyApi = createApi({
 
 export const {
   useGetAnalysisIssuesQuery,
+  useGetParcelReviewQuery,
+  useGetParcelReviewGroupQuery,
+  useUpdateParcelReviewGroupMutation,
   useGetHealStatusQuery,
   useCancelHealingMutation,
   useHealTopologyMutation,

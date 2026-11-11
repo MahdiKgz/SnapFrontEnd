@@ -5,7 +5,7 @@ import { useUploadTopologyMutation } from "../api/topology-api";
 import { storeTopologyJobId } from "./topology-job-storage";
 import type { TopologyUploadData } from "./types";
 
-const ACCEPTED_EXTENSIONS = ["json", "geojson", "kml", "kmz", "shp", "zip", "dwg", "dgn"];
+const ACCEPTED_EXTENSIONS = ["json", "geojson", "kml", "kmz", "shp", "zip", "dwg", "dgn", "dxf"];
 
 interface UseTopologyUploadOptions {
   clearPreviewError: () => void;
@@ -29,7 +29,7 @@ export function useTopologyUpload({
   const [fileError, setFileError] = useState("");
   const [validationError, setValidationError] = useState("");
 
-  const isCad = !!selectedFile && /\.(dwg|dgn)$/i.test(selectedFile.name);
+  const isCad = !!selectedFile && /\.(dwg|dgn|dxf)$/i.test(selectedFile.name);
   const errorCode =
     error && "data" in error && error.data && typeof error.data === "object" && "code" in error.data
       ? String(error.data.code)
@@ -89,7 +89,7 @@ export function useTopologyUpload({
     if (!extension || !ACCEPTED_EXTENSIONS.includes(extension)) {
       setSelectedFile(null);
       setFileError(
-        "فرمت فایل باید JSON، GeoJSON، KML، KMZ، SHP، ZIP حاوی Shapefile، DWG یا DGN باشد.",
+        "فرمت فایل باید JSON، GeoJSON، KML، KMZ، SHP، ZIP حاوی Shapefile، DWG، DGN یا DXF باشد.",
       );
       return;
     }

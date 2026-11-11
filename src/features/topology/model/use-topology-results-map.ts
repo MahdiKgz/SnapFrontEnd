@@ -27,6 +27,7 @@ const LAYER_IDS = [
 interface UseTopologyResultsMapOptions {
   affectedFeatures: AffectedFeatureCollection | null;
   isMapReady: boolean;
+  focus?: boolean;
   mapRef: RefObject<MapLibreMap | null>;
   selectedFeatureIndexes: number[];
 }
@@ -74,6 +75,7 @@ function flyToFeatures(
 export function useTopologyResultsMap({
   affectedFeatures,
   isMapReady,
+  focus = true,
   mapRef,
   selectedFeatureIndexes,
 }: UseTopologyResultsMapOptions) {
@@ -184,7 +186,7 @@ export function useTopologyResultsMap({
     };
 
     showResults();
-    flyToFeatures(map, data);
+    if (focus) flyToFeatures(map, data);
 
     return () => {
       // Map removal already disposes its layers and sources.
@@ -192,7 +194,7 @@ export function useTopologyResultsMap({
       if (mapRef.current !== map) return;
       removeResultsLayers(map);
     };
-  }, [affectedFeatures, isMapReady, mapRef]);
+  }, [affectedFeatures, focus, isMapReady, mapRef]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -206,7 +208,7 @@ export function useTopologyResultsMap({
       if (!source) return false;
 
       source.setData(selectedData);
-      if (selectedFeatureIndexes.length > 0) flyToFeatures(map, selectedData);
+      if (focus && selectedFeatureIndexes.length > 0) flyToFeatures(map, selectedData);
       return true;
     };
 
@@ -225,5 +227,5 @@ export function useTopologyResultsMap({
       map.off("load", applyWhenReady);
       map.off("idle", applyWhenReady);
     };
-  }, [affectedFeatures, isMapReady, mapRef, selectedFeatureIndexes]);
+  }, [affectedFeatures, focus, isMapReady, mapRef, selectedFeatureIndexes]);
 }

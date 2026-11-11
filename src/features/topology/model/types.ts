@@ -1,4 +1,10 @@
-import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
+import type {
+  FeatureCollection,
+  GeoJsonProperties,
+  Geometry,
+  MultiPolygon,
+  Polygon,
+} from "geojson";
 
 export interface TopologyIssueLocation {
   geometryCollectionPath: number[];
@@ -45,7 +51,10 @@ export interface TopologyIssueGroup {
   disposition: string;
 }
 
-export type AffectedFeatureCollection = FeatureCollection<Geometry, GeoJsonProperties> & {
+export type AffectedFeatureCollection = Omit<
+  FeatureCollection<Geometry, GeoJsonProperties>,
+  "features"
+> & {
   features: Array<
     FeatureCollection<Geometry, GeoJsonProperties>["features"][number] & {
       snapgisFeatureIndex?: number;
@@ -169,4 +178,10 @@ export interface ManualReviewDecision {
 export interface TopologyHealStatusResponse {
   success: boolean;
   data: TopologyHealStatusData;
+}
+
+export interface ParcelReview {
+  geometry: Polygon | MultiPolygon;
+  revision: string;
+  confirmed: boolean;
 }

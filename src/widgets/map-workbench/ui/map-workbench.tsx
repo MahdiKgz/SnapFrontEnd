@@ -11,6 +11,7 @@ import { MapMeasurementTools } from "@features/map-measurement";
 import { useMapPreview } from "@features/map-preview";
 import {
   CadImportNotice,
+  ParcelEditor,
   TopologyForm,
   type TopologyUploadData,
   useLazyGetHealedOutputQuery,
@@ -27,11 +28,26 @@ import { MapToolPanel } from "./map-tool-panel";
 import { PointerCoordinate } from "./pointer-coordinate";
 import { ToolPlaceholder } from "./tool-placeholder";
 
+interface ReviewTarget {
+  jobId: string;
+  groupId: string;
+  featureIndexes: number[];
+}
+
 export function MapWorkbench() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [uploadReview, setUploadReview] = useState<ReviewTarget | null>(null);
+  const [confirmedUploadParcels, setConfirmedUploadParcels] = useState<number[]>([]);
+  const [reviewNotice, setReviewNotice] = useState<{ jobId: string; error?: boolean } | null>(null);
   const { containerRef, isMapReady, mapRef } = useMapLibreMap();
-  const { clearPreviewError, isPreviewing, previewError, previewGeoJson, removePreview } =
-    useMapPreview(mapRef, isMapReady);
+  const {
+    clearPreviewError,
+    isPreviewing,
+    previewError,
+    previewGeoJson,
+    removePreview,
+    setPreviewMask,
+  } = useMapPreview(mapRef, isMapReady);
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
@@ -60,16 +76,66 @@ export function MapWorkbench() {
     skip: !healedFileId,
   });
   const fileDetail = fileDetailRequest.currentData?.data;
-  const savedFileIsHealed = fileDetail?.status === "completed";
+  const savedFileHasOutput =
+    fileDetail?.status === "completed" || !!fileDetail?.manualParcelIndexes?.length;
   const savedFileIsReady = fileDetail?.id === healedFileId;
   const savedFileIsLoading =
     fileDetailRequest.isFetching ||
     healedOutputRequest.isFetching ||
-    (!savedFileIsHealed && originalRequest.isFetching);
+    (!savedFileHasOutput && originalRequest.isFetching);
   const reviewIssues = useMemo(
     () => fileDetail?.report?.issues ?? [],
     [fileDetail?.report?.issues],
   );
+
+  const requestedReview = reviewIssues.find(
+    (issue, index) =>
+      (issue.issueIndex ?? index) === selectedIssueIndex && issue.disposition === "ManualReview",
+  );
+  const savedGroup =
+    searchParams.get("edit") === "1" &&
+    requestedReview &&
+    fileDetail?.report?.issueGroups?.find(
+      (group) => group.check === requestedReview.check && group.code === requestedReview.code,
+    );
+  const savedReview =
+    searchParams.get("edit") === "1" && healedFileId && savedGroup
+      ? {
+          jobId: healedFileId,
+          groupId: savedGroup.groupId,
+          featureIndexes: savedGroup.affectedFeatureIndexes,
+        }
+      : null;
+  const review = uploadReview ?? savedReview;
+  const editorActive =
+    !!review && isMapReady && (uploadReview !== null || displayedSavedFileId === review.jobId);
+  const [loadedReviewKey, setLoadedReviewKey] = useState<string>();
+  const reviewKey = review ? `${review.jobId}:${review.groupId}` : undefined;
+  const editingIndexes =
+    editorActive && reviewKey === loadedReviewKey ? review?.featureIndexes : undefined;
+  const affected = topologyResult?.report.affectedFeatureCollection;
+  const affectedOnMap = useMemo(() => {
+    if (!affected || isHealedResultVisible) return null;
+    if (!editingIndexes) return affected;
+    const indexes = new Set(editingIndexes);
+    return {
+      ...affected,
+      features: affected.features.filter(
+        ({ snapgisFeatureIndex, geometry }) =>
+          snapgisFeatureIndex === undefined ||
+          !indexes.has(snapgisFeatureIndex) ||
+          (geometry?.type !== "Polygon" && geometry?.type !== "MultiPolygon"),
+      ),
+    };
+  }, [affected, isHealedResultVisible, editingIndexes]);
+  useEffect(() => {
+    if (!editorActive && loadedReviewKey) setPreviewMask?.([]);
+  }, [editorActive, loadedReviewKey, setPreviewMask]);
+  const activeJobId = topologyResult?.jobId ?? healedFileId;
+  const activeJob = useRef(activeJobId);
+  useEffect(() => {
+    activeJob.current = activeJobId;
+  }, [activeJobId]);
 
   useOriginalGeometryOverlay({
     data: originalGeoJson,
@@ -79,16 +145,16 @@ export function MapWorkbench() {
   });
   useReviewIssueFocus({
     data: fileDetail?.report?.affectedFeatureCollection ?? null,
-    isMapReady: isMapReady && savedFileIsReady && displayedSavedFileId === healedFileId,
+    isMapReady:
+      isMapReady && !editorActive && savedFileIsReady && displayedSavedFileId === healedFileId,
     issues: reviewIssues,
     mapRef,
     selectedIssueIndex,
   });
 
   useTopologyResultsMap({
-    affectedFeatures: isHealedResultVisible
-      ? null
-      : (topologyResult?.report.affectedFeatureCollection ?? null),
+    affectedFeatures: affectedOnMap,
+    focus: !editorActive,
     isMapReady,
     mapRef,
     selectedFeatureIndexes,
@@ -117,7 +183,7 @@ export function MapWorkbench() {
     setTopologyResult(null);
     setSelectedFeatureIndexes([]);
     let cancelled = false;
-    const request = savedFileIsHealed
+    const request = savedFileHasOutput
       ? loadHealedOutput(`/heal/${encodeURIComponent(healedFileId)}/output`)
       : loadOriginalInput(healedFileId);
     void request
@@ -128,7 +194,7 @@ export function MapWorkbench() {
         setSelectedFeatureIndexes([]);
         await previewGeoJson(output);
         if (cancelled) return;
-        setIsHealedResultVisible(savedFileIsHealed);
+        setIsHealedResultVisible(savedFileHasOutput);
         setDisplayedSavedFileId(healedFileId);
       })
       .catch(() => {
@@ -142,7 +208,7 @@ export function MapWorkbench() {
     healedFileId,
     healedFileLoadAttempt,
     savedFileIsReady,
-    savedFileIsHealed,
+    savedFileHasOutput,
     isMapReady,
     loadHealedOutput,
     loadOriginalInput,
@@ -153,6 +219,38 @@ export function MapWorkbench() {
     if (fileDetailRequest.isError) void fileDetailRequest.refetch();
     requestedHealedFileId.current = null;
     setHealedFileLoadAttempt((attempt) => attempt + 1);
+  };
+
+  const closeParcelEditor = () => {
+    setLoadedReviewKey(undefined);
+    setPreviewMask([]);
+    if (uploadReview) {
+      setUploadReview(null);
+      setIsPanelOpen(true);
+    } else {
+      const next = new URLSearchParams(searchParams);
+      next.delete("edit");
+      setSearchParams(next, { replace: true });
+    }
+  };
+
+  const refreshReviewedPreview = async (target: ReviewTarget, featureIndexes: number[]) => {
+    if (activeJob.current !== target.jobId) return;
+    if (uploadReview) {
+      setConfirmedUploadParcels((current) => Array.from(new Set([...current, ...featureIndexes])));
+    }
+    closeParcelEditor();
+    setReviewNotice({ jobId: target.jobId });
+    try {
+      const output = await loadHealedOutput(
+        `/heal/${encodeURIComponent(target.jobId)}/output`,
+      ).unwrap();
+      if (activeJob.current !== target.jobId) return;
+      await previewGeoJson(output, false);
+      setIsHealedResultVisible(true);
+    } catch {
+      if (activeJob.current === target.jobId) setReviewNotice({ jobId: target.jobId, error: true });
+    }
   };
 
   const selectTool = (tool: MapToolId) => {
@@ -173,13 +271,15 @@ export function MapWorkbench() {
         </details>
       )}
       <PointerCoordinate isMapReady={isMapReady} mapRef={mapRef} />
-      <MapMeasurementTools
-        mapRef={mapRef}
-        isMapReady={isMapReady}
-        onActiveChange={setIsMeasuring}
-      />
+      {!editorActive && (
+        <MapMeasurementTools
+          mapRef={mapRef}
+          isMapReady={isMapReady}
+          onActiveChange={setIsMeasuring}
+        />
+      )}
 
-      {!isMeasuring && !isPanelOpen && (
+      {!editorActive && !isMeasuring && !isPanelOpen && (
         <FeatureInspectionPanel mapRef={mapRef} isMapReady={isMapReady} />
       )}
 
@@ -209,7 +309,7 @@ export function MapWorkbench() {
 
       {healedFileId &&
         savedFileIsReady &&
-        !savedFileIsHealed &&
+        !savedFileHasOutput &&
         !savedFileIsLoading &&
         !healedFileLoadError &&
         !fileDetailRequest.isError && (
@@ -221,7 +321,7 @@ export function MapWorkbench() {
           </div>
         )}
 
-      {healedFileId && savedFileIsHealed && isHealedResultVisible && !healedFileLoadError && (
+      {healedFileId && savedFileHasOutput && isHealedResultVisible && !healedFileLoadError && (
         <button
           type="button"
           aria-pressed={isOriginalVisible}
@@ -259,9 +359,42 @@ export function MapWorkbench() {
         </button>
       )}
 
+      {review && !isMapReady && (
+        <p
+          role="status"
+          className="absolute bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-lg border bg-card px-4 py-3 text-xs shadow-lg"
+        >
+          در حال آماده‌سازی نقشه برای ویرایش…
+        </p>
+      )}
+      {editorActive && review && (
+        <ParcelEditor
+          key={reviewKey}
+          mapRef={mapRef}
+          jobId={review.jobId}
+          groupId={review.groupId}
+          onReady={(indexes) => {
+            setLoadedReviewKey(reviewKey);
+            setPreviewMask(indexes);
+          }}
+          onCancel={closeParcelEditor}
+          onConfirmed={(indexes) => void refreshReviewedPreview(review, indexes)}
+        />
+      )}
+      {!editorActive && reviewNotice?.jobId === activeJobId && (
+        <p
+          role="status"
+          className="absolute bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-lg border bg-card px-4 py-3 text-xs shadow-lg"
+        >
+          {reviewNotice.error
+            ? "اصلاح در خروجی ثبت شد. به‌روزرسانی پیش‌نمایش نقشه انجام نشد."
+            : "اصلاحات تأیید و در خروجی ثبت شدند."}
+        </p>
+      )}
+
       <MapToolPanel
         activeTool={activeTool}
-        isOpen={isPanelOpen}
+        isOpen={isPanelOpen && !editorActive}
         onClose={() => setIsPanelOpen(false)}
         onSelectTool={selectTool}
       >
@@ -271,11 +404,15 @@ export function MapWorkbench() {
             isPreviewing={isPreviewing}
             onAnalysisComplete={(result) => {
               setTopologyResult(result);
+              setConfirmedUploadParcels([]);
+              setReviewNotice(null);
               setSelectedFeatureIndexes([]);
               setIsHealedResultVisible(false);
             }}
             onAnalysisReset={() => {
               setTopologyResult(null);
+              setConfirmedUploadParcels([]);
+              setReviewNotice(null);
               setSelectedFeatureIndexes([]);
               setIsHealedResultVisible(false);
             }}
@@ -284,6 +421,17 @@ export function MapWorkbench() {
               await previewGeoJson(output);
               setIsHealedResultVisible(true);
             }}
+            onReviewGroup={(group) => {
+              if (!topologyResult) return;
+              setIsMeasuring(false);
+              setReviewNotice(null);
+              setUploadReview({
+                jobId: topologyResult.jobId,
+                groupId: group.groupId,
+                featureIndexes: group.affectedFeatureIndexes,
+              });
+            }}
+            manualParcelIndexes={confirmedUploadParcels}
             onSelectFeatures={setSelectedFeatureIndexes}
             previewError={previewError}
             removePreview={removePreview}
