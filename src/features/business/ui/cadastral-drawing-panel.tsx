@@ -2,7 +2,6 @@ import { type RefObject, useEffect, useEffectEvent, useState } from "react";
 
 import {
   Check,
-  Download,
   Magnet,
   MousePointer2,
   Pentagon,
@@ -16,6 +15,8 @@ import {
 } from "lucide-react";
 import type { Map } from "maplibre-gl";
 import { useBlocker } from "react-router-dom";
+
+import { DrawingExportButton } from "@features/conversion";
 
 import { Button } from "@shared/ui/button";
 
@@ -281,19 +282,8 @@ function Workspace({
     }
   };
 
-  const exportDrawing = () => {
-    const url = URL.createObjectURL(
-      new Blob([JSON.stringify(drawingGeoJson(shapes))], { type: "application/geo+json" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `cadastral-${id}.geojson`;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
-
   const keyboard = useEffectEvent((event: KeyboardEvent) => {
-    const key = event.key.toLowerCase();
+    const key = (event.key ?? "").toLowerCase();
     if (
       event.defaultPrevented ||
       event.repeat ||
@@ -507,10 +497,11 @@ function Workspace({
             <Save className="size-4" />
             {saving.isLoading ? "در حال ذخیره…" : "ذخیرهٔ ترسیم"}
           </Button>
-          <Button size="sm" variant="outline" disabled={!shapes.length} onClick={exportDrawing}>
-            <Download className="size-4" />
-            GeoJSON
-          </Button>
+          <DrawingExportButton
+            filename={`cadastral-${id}`}
+            disabled={!shapes.length}
+            readDrawing={() => drawingGeoJson(shapes)}
+          />
           <span className="text-xs text-muted-foreground">
             {count(shapes.length)} عارضه{dirty ? " · ذخیره‌نشده" : ""}
           </span>

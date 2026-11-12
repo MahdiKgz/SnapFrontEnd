@@ -2,15 +2,17 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { HealedExportButton } from "./healed-export-button";
+import { DrawingExportButton, HealedExportButton } from "./healed-export-button";
 
-const { exportFile, downloadFile, status, abort } = vi.hoisted(() => ({
+const { exportFile, convertFile, downloadFile, status, abort } = vi.hoisted(() => ({
   exportFile: vi.fn(),
+  convertFile: vi.fn(),
   downloadFile: vi.fn(),
   status: vi.fn(),
   abort: vi.fn(),
 }));
 vi.mock("../api/conversion-api", () => ({
+  useConvertFileMutation: () => [convertFile, { isLoading: false }],
   useExportHealedMutation: () => [exportFile, { isLoading: false }],
   useDownloadConversionMutation: () => [downloadFile, { isLoading: false }],
   useConversionJobStatus: status,
@@ -82,4 +84,61 @@ it("downloads a completed queued export through the authenticated conversion end
   fireEvent.click(await screen.findByRole("button", { name: "ساخت و دانلود خروجی" }));
   fireEvent.click(await screen.findByRole("button", { name: "دانلود خروجی آماده" }));
   await waitFor(() => expect(downloadFile).toHaveBeenCalledWith("export-job"));
+});
+
+it("exports a mixed drawing as a layered Shapefile ZIP through the conversion API", async () => {
+  convertFile.mockReturnValue({ unwrap: async () => result, abort });
+  render(
+    <DrawingExportButton
+      filename="cadastral-roof"
+      readDrawing={() => ({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [51, 35],
+                [52, 35],
+              ],
+            },
+          },
+          {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  [51, 35],
+                  [52, 35],
+                  [52, 36],
+                  [51, 35],
+                ],
+              ],
+            },
+          },
+        ],
+      })}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "خروجی ترسیم" }));
+  fireEvent.change(await screen.findByLabelText("فرمت فایل خروجی"), {
+    target: { value: "shapefile" },
+  });
+  fireEvent.change(screen.getByLabelText("سیستم مختصات مقصد"), { target: { value: "EPSG:32639" } });
+  fireEvent.click(screen.getByRole("button", { name: "ساخت و دانلود خروجی" }));
+  const fileLink = await screen.findByRole<HTMLAnchorElement>("link", {
+    name: "دریافت دوبارهٔ فایل",
+  });
+  expect(fileLink.download).toBe("cadastral-roof.zip");
+  const [form] = convertFile.mock.lastCall as [FormData];
+  expect(form.get("splitShapefile")).toBe("true");
+  expect(form.get("targetFormat")).toBe("shapefile");
+  expect(form.get("sourceCRS")).toBe("EPSG:4326");
+  expect(form.get("targetCRS")).toBe("EPSG:32639");
+  expect((form.get("file") as File).name).toBe("cadastral-roof.geojson");
+  expect(exportFile).not.toHaveBeenCalled();
 });

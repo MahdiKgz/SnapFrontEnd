@@ -1,12 +1,14 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 
-import { Button } from "@/shared/ui/button";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Dialog } from "@base-ui/react/dialog";
+import type { FeatureCollection } from "geojson";
 import { Download, LoaderCircle, X } from "lucide-react";
 
 import {
   useConversionJobStatus,
+  useConvertFileMutation,
   useDownloadConversionMutation,
   useExportHealedMutation,
 } from "../api/conversion-api";
@@ -17,19 +19,25 @@ import {
   conversionWarning,
 } from "../model/types";
 
-function ExportForm({ jobId }: { jobId: string }) {
+type ExportSource = { jobId: string } | { filename: string; readDrawing: () => FeatureCollection };
+const WGS84 = "EPSG:4326";
+
+function ExportForm({ source }: { source: ExportSource }) {
+  const id = useId();
+  const healed = "jobId" in source;
   const [format, setFormat] = useState<ConversionFormat>("geojson");
-  const [targetCRS, setTargetCRS] = useState("EPSG:4326");
+  const [targetCRS, setTargetCRS] = useState(WGS84);
   const [conversionId, setConversionId] = useState<string | null>(null);
   const [download, setDownload] = useState<ConversionDownload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exportFile, exporting] = useExportHealedMutation();
+  const [convertFile, converting] = useConvertFileMutation();
   const [fetchDownload, downloading] = useDownloadConversionMutation();
   const status = useConversionJobStatus(conversionId);
   const job = status.currentData?.data;
   const pending =
     !!conversionId && job?.status !== "completed" && job?.status !== "failed" && !status.isError;
-  const busy = exporting.isLoading || downloading.isLoading || pending;
+  const busy = exporting.isLoading || converting.isLoading || downloading.isLoading || pending;
   const request = useRef<{ abort: () => void } | null>(null);
   const url = useRef<string | null>(null);
   const mounted = useRef(false);
@@ -48,10 +56,14 @@ function ExportForm({ jobId }: { jobId: string }) {
     }
     if (url.current) URL.revokeObjectURL(url.current);
     url.current = result.url;
-    setDownload(result);
+    const filename =
+      "filename" in source
+        ? `${source.filename}.${result.filename.split(".").at(-1)}`
+        : result.filename;
+    setDownload({ ...result, filename });
     const link = document.createElement("a");
     link.href = result.url;
-    link.download = result.filename;
+    link.download = filename;
     document.body.append(link);
     link.click();
     link.remove();
@@ -72,17 +84,51 @@ function ExportForm({ jobId }: { jobId: string }) {
       setError("سیستم مختصات مقصد را مانند EPSG:4326 وارد کنید.");
       return;
     }
-    setError(null);
-    setConversionId(null);
-    setDownload(null);
-    if (url.current) {
-      URL.revokeObjectURL(url.current);
-      url.current = null;
-    }
-    const active = exportFile({ jobId, targetFormat: format, targetCRS: crs });
-    request.current = active;
+    clearResult();
     try {
-      const result = await active.unwrap();
+      let requestResult;
+      if ("jobId" in source) {
+        requestResult = exportFile({ jobId: source.jobId, targetFormat: format, targetCRS: crs });
+      } else {
+        const drawing = source.readDrawing();
+        const data =
+          format === "dxf"
+            ? {
+                ...drawing,
+                features: drawing.features.map((feature) => ({
+                  ...feature,
+                  properties: {
+                    Layer: feature.geometry.type === "Polygon" ? "Parcels" : "Lines",
+                    ...feature.properties,
+                  },
+                })),
+              }
+            : drawing;
+        const file = new Blob([JSON.stringify(data)], { type: "application/geo+json" });
+        if (format === "geojson" && crs === WGS84) {
+          receive({
+            kind: "download",
+            url: URL.createObjectURL(file),
+            filename: "converted.geojson",
+            report: {
+              features: drawing.features.length,
+              sourceCRS: WGS84,
+              targetCRS: crs,
+              warnings: [],
+            },
+          });
+          return;
+        }
+        const body = new FormData();
+        body.append("file", file, `${source.filename}.geojson`);
+        body.append("sourceCRS", WGS84);
+        body.append("targetCRS", crs);
+        body.append("targetFormat", format);
+        if (format === "shapefile") body.append("splitShapefile", "true");
+        requestResult = convertFile(body);
+      }
+      request.current = requestResult;
+      const result = await requestResult.unwrap();
       if ("kind" in result) receive(result);
       else if (mounted.current) setConversionId(result.data.jobId);
     } catch (error) {
@@ -105,11 +151,11 @@ function ExportForm({ jobId }: { jobId: string }) {
     <form onSubmit={submit} className="space-y-4">
       <fieldset disabled={busy} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="healed-export-format" className="text-sm font-medium">
+          <label htmlFor={`format-${id}`} className="text-sm font-medium">
             فرمت فایل خروجی
           </label>
           <select
-            id="healed-export-format"
+            id={`format-${id}`}
             className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
             value={format}
             onChange={(event) => {
@@ -123,27 +169,27 @@ function ExportForm({ jobId }: { jobId: string }) {
           </select>
         </div>
         <div className="rounded-lg bg-muted/50 p-3 text-xs leading-6 text-muted-foreground">
-          سیستم مختصات مبدأ خروجی ترمیم‌شده: <bdi dir="ltr">WGS84 — EPSG:4326</bdi>
+          سیستم مختصات مبدأ: <bdi dir="ltr">WGS84 — EPSG:4326</bdi>
           <br />
           مبدأ به‌صورت خودکار مشخص است و نیازی به ورود آن نیست.
         </div>
         <div className="space-y-2">
-          <label htmlFor="healed-export-crs" className="text-sm font-medium">
+          <label htmlFor={`crs-${id}`} className="text-sm font-medium">
             سیستم مختصات مقصد
           </label>
           <Input
-            id="healed-export-crs"
+            id={`crs-${id}`}
             dir="ltr"
             className="font-mono text-foreground"
             value={targetCRS}
-            list="healed-export-crs-options"
+            list={`crs-options-${id}`}
             onChange={(event) => {
               clearResult();
               setTargetCRS(event.target.value);
             }}
             required
           />
-          <datalist id="healed-export-crs-options">
+          <datalist id={`crs-options-${id}`}>
             <option value="EPSG:4326">WGS84</option>
             <option value="EPSG:3857">Web Mercator</option>
             {[38, 39, 40, 41].map((zone) => (
@@ -159,19 +205,21 @@ function ExportForm({ jobId }: { jobId: string }) {
         </div>
         {format === "dxf" && (
           <p className="rounded-lg bg-muted/50 p-3 text-xs leading-6">
-            مرز عارضه‌ها به‌صورت پلی‌لاین در لایهٔ اصلی CAD صادر می‌شود. می‌توانید در نرم‌افزار مقصد
-            از خطوط پلیگون بسازید.
+            {healed
+              ? "مرز عارضه‌ها به‌صورت پلی‌لاین در لایهٔ اصلی CAD صادر می‌شود. می‌توانید در نرم‌افزار مقصد از خطوط پلیگون بسازید."
+              : "قطعه‌ها به‌صورت پلی‌لاین بسته و چندخطی‌ها در لایهٔ جداگانهٔ CAD صادر می‌شوند."}
           </p>
         )}
-        {format === "geojson" && (
+        {healed && format === "geojson" && (
           <p className="text-xs leading-6 text-muted-foreground">
             مرز پلیگون‌ها و عارضه‌های خطی به‌صورت MultiLineString ذخیره می‌شوند.
           </p>
         )}
         {format === "shapefile" && (
           <p className="text-xs leading-6 text-muted-foreground">
-            ZIP شامل فایل‌های شیپ‌فایل و PRJ خواهد بود. این فرمت به عارضه‌هایی از یک خانوادهٔ هندسی
-            نیاز دارد.
+            {healed
+              ? "ZIP شامل فایل‌های شیپ‌فایل و PRJ خواهد بود. این فرمت به عارضه‌هایی از یک خانوادهٔ هندسی نیاز دارد."
+              : "در ترسیم ترکیبی، قطعه‌ها و چندخطی‌ها به‌صورت دو لایه با فایل‌های PRJ در یک ZIP دریافت می‌شوند."}
           </p>
         )}
         {format === "geojson" && targetCRS.trim().toUpperCase() !== "EPSG:4326" && (
@@ -252,19 +300,22 @@ function ExportForm({ jobId }: { jobId: string }) {
   );
 }
 
-export function HealedExportButton({
-  jobId,
+function ExportButton({
+  source,
   className,
-  children = "دانلود فایل ترمیم‌شده",
+  children,
+  disabled,
 }: {
-  jobId: string;
+  source: ExportSource;
   className?: string;
-  children?: React.ReactNode;
+  children: React.ReactNode;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger
+        disabled={disabled}
         className={
           className ??
           "inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
@@ -291,9 +342,47 @@ export function HealedExportButton({
           <Dialog.Description className="mb-4 text-xs leading-6 text-muted-foreground">
             فرمت فایل و سیستم مختصات مقصد را انتخاب کنید.
           </Dialog.Description>
-          {open && <ExportForm key={jobId} jobId={jobId} />}
+          {open && (
+            <ExportForm key={"jobId" in source ? source.jobId : source.filename} source={source} />
+          )}
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+export function HealedExportButton({
+  jobId,
+  className,
+  children = "دانلود فایل ترمیم‌شده",
+}: {
+  jobId: string;
+  className?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <ExportButton source={{ jobId }} className={className}>
+      {children}
+    </ExportButton>
+  );
+}
+
+export function DrawingExportButton({
+  filename,
+  readDrawing,
+  disabled,
+}: {
+  filename: string;
+  readDrawing: () => FeatureCollection;
+  disabled?: boolean;
+}) {
+  return (
+    <ExportButton
+      source={{ filename, readDrawing }}
+      disabled={disabled}
+      className={buttonVariants({ size: "sm", variant: "outline" })}
+    >
+      خروجی ترسیم
+    </ExportButton>
   );
 }
