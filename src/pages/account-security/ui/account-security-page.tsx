@@ -1,9 +1,18 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { MailCheck } from "lucide-react";
+import { useAppSelector } from "@/app/store/hooks";
+import { Dialog } from "@base-ui/react/dialog";
+import {
+  Clock3,
+  LoaderCircle,
+  MailCheck,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Send,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -12,32 +21,52 @@ import {
   useRequestEmailVerificationMutation,
   useVerifyEmailMutation,
 } from "@features/auth";
+import { BusinessMessage } from "@features/business";
+
+import { Button } from "@shared/ui/button";
+import { Input } from "@shared/ui/input";
+import { Label } from "@shared/ui/label";
+
+const fallback = "درخواست انجام نشد. دوباره تلاش کنید.";
 
 export function AccountSecurityPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const phone = useAppSelector((state) => state.auth.user?.phone);
   const token = new URLSearchParams(location.hash.slice(1)).get("token");
-  const { data, isError, isLoading, refetch } = useAccountEmailQuery(undefined, {
+  const { data, isError, isLoading, isFetching, refetch } = useAccountEmailQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
   const [sendVerification, { isLoading: isSending }] = useRequestEmailVerificationMutation();
   const [verify, { isLoading: isVerifying }] = useVerifyEmailMutation();
   const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [formError, setFormError] = useState("");
+  const dialogTitle = useRef<HTMLHeadingElement>(null);
+  const verified = data?.emailVerifiedAt ? data.email : null;
+
+  const start = (value = "") => {
+    setEmail(value);
+    setEditingEmail(false);
+    setFormError("");
+    setOpen(true);
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFeedback(undefined);
-    const form = event.currentTarget;
-    const fields = new FormData(form);
+    setFormError("");
+    const fields = new FormData(event.currentTarget);
     try {
       await sendVerification({
-        email: String(fields.get("email")).trim(),
-        password: String(fields.get("password")),
+        email: email.trim(),
+        password: String(fields.get("password") ?? ""),
       }).unwrap();
-      form.reset();
-      setFeedback({ text: "لینک تأیید ارسال شد. صندوق ورودی و پوشه هرزنامه را بررسی کنید." });
+      setOpen(false);
+      setFeedback({ text: "لینک تأیید ارسال شد. صندوق ورودی و پوشهٔ هرزنامه را بررسی کنید." });
     } catch (error) {
-      setFeedback({ text: getAuthErrorMessage(error) ?? "", error: true });
+      setFormError(getAuthErrorMessage(error) ?? fallback);
     }
   };
 
@@ -49,116 +78,221 @@ export function AccountSecurityPage() {
       navigate(location.pathname, { replace: true });
       setFeedback({ text: "ایمیل شما تأیید شد و برای بازیابی رمز عبور فعال است." });
     } catch (error) {
-      setFeedback({ text: getAuthErrorMessage(error) ?? "", error: true });
+      setFeedback({ text: getAuthErrorMessage(error) ?? fallback, error: true });
     }
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6 lg:p-10">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold">امنیت حساب</h1>
-        <p className="text-sm text-muted-foreground">
-          برای بازیابی رمز عبور، یک ایمیل در دسترس ثبت و تأیید کنید.
-        </p>
-      </header>
-
-      {token && (
-        <section aria-labelledby="verify-title" className="space-y-3 rounded-xl border bg-card p-5">
-          <h2 id="verify-title" className="font-semibold">
-            تأیید ایمیل از طریق لینک
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            لینک را در همان حسابی که درخواست را ثبت کرده تأیید کنید.
+    <div dir="rtl" className="h-full overflow-y-auto p-5 md:p-8">
+      <div className="mx-auto max-w-6xl space-y-5">
+        <header>
+          <h1 className="text-2xl font-black">امنیت حساب</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            ایمیلی را که برای بازیابی رمز عبور استفاده می‌کنید مدیریت کنید.
           </p>
-          <Button type="button" onClick={() => void confirm()} disabled={isSending || isVerifying}>
-            {isVerifying ? "در حال تأیید…" : "تأیید ایمیل"}
-          </Button>
-        </section>
-      )}
+        </header>
 
-      {feedback && (
-        <p
-          role={feedback.error ? "alert" : "status"}
-          className={feedback.error ? "text-sm text-destructive" : "text-sm text-primary"}
-        >
-          {feedback.text}
-        </p>
-      )}
-
-      <section aria-labelledby="email-title" className="space-y-5 rounded-xl border bg-card p-5">
-        <div className="flex items-center gap-2">
-          <MailCheck className="size-5 text-primary" aria-hidden="true" />
-          <h2 id="email-title" className="font-semibold">
-            ایمیل بازیابی
-          </h2>
-        </div>
-
-        {isLoading && (
-          <p role="status" className="text-sm text-muted-foreground">
-            در حال بررسی وضعیت ایمیل…
-          </p>
-        )}
-        {isError && (
-          <div className="space-y-2">
-            <p role="alert" className="text-sm text-destructive">
-              دریافت وضعیت ایمیل ممکن نشد.
-            </p>
-            <Button variant="outline" type="button" onClick={() => void refetch()}>
-              تلاش دوباره
+        {token && (
+          <section
+            aria-labelledby="verify-title"
+            className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-primary/25 bg-primary/5 p-4 sm:p-5"
+          >
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="size-5 shrink-0 text-primary" aria-hidden="true" />
+              <div>
+                <h2 id="verify-title" className="text-sm font-bold">
+                  تأیید ایمیل بازیابی
+                </h2>
+                <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                  تأیید را در همان حسابی انجام دهید که لینک را درخواست کرده است.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={() => void confirm()}
+              disabled={isSending || isVerifying}
+            >
+              {isVerifying && <LoaderCircle className="size-4 animate-spin" />}
+              {isVerifying ? "در حال تأیید…" : "تأیید ایمیل"}
             </Button>
-          </div>
+          </section>
         )}
 
-        {data && (
-          <>
-            <dl className="space-y-2 text-sm">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <dt className="text-muted-foreground">ایمیل تأییدشده</dt>
-                <dd>
-                  {data.emailVerifiedAt && data.email ? <bdi>{data.email}</bdi> : "هنوز تأیید نشده"}
+        {feedback && <BusinessMessage error={feedback.error}>{feedback.text}</BusinessMessage>}
+
+        <section
+          aria-labelledby="email-title"
+          aria-busy={isFetching}
+          className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4 sm:p-5">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <MailCheck className="size-5" aria-hidden="true" />
+              </span>
+              <h2 id="email-title" className="text-sm font-bold">
+                ایمیل بازیابی
+              </h2>
+            </div>
+            {data && !isError && (
+              <Button
+                type="button"
+                variant={verified ? "outline" : "default"}
+                size="sm"
+                disabled={isSending || isVerifying}
+                onClick={() => start()}
+              >
+                {verified ? <Pencil className="size-4" /> : <Plus className="size-4" />}
+                {verified ? "تغییر ایمیل" : "افزودن ایمیل"}
+              </Button>
+            )}
+          </div>
+          {isLoading && (
+            <p role="status" className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
+              <LoaderCircle className="size-4 animate-spin" /> در حال دریافت وضعیت ایمیل…
+            </p>
+          )}
+          {isError && (
+            <div className="space-y-3 p-5">
+              <BusinessMessage error>دریافت وضعیت ایمیل انجام نشد.</BusinessMessage>
+              <Button variant="outline" size="sm" type="button" onClick={() => void refetch()}>
+                <RefreshCw className="size-4" /> تلاش دوباره
+              </Button>
+            </div>
+          )}
+          {data && !isError && (
+            <dl className="divide-y divide-border text-sm">
+              <div className="grid gap-2 px-4 py-4 sm:grid-cols-[minmax(9rem,1fr)_minmax(0,2fr)] sm:items-center sm:px-5">
+                <dt className="font-medium">ایمیل تأییدشده</dt>
+                <dd className="flex min-w-0 flex-wrap items-center gap-2">
+                  {verified ? (
+                    <>
+                      <bdi dir="ltr" className="break-all">
+                        {verified}
+                      </bdi>
+                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                        فعال
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">هنوز ایمیلی تأیید نشده است.</span>
+                  )}
                 </dd>
               </div>
               {data.pendingEmail && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <dt className="text-muted-foreground">در انتظار تأیید</dt>
-                  <dd>
-                    <bdi>{data.pendingEmail}</bdi>
+                <div className="grid gap-2 px-4 py-4 sm:grid-cols-[minmax(9rem,1fr)_minmax(0,2fr)] sm:items-center sm:px-5">
+                  <dt className="flex items-center gap-2 font-medium">
+                    <Clock3 className="size-4 text-muted-foreground" />
+                    در انتظار تأیید
+                  </dt>
+                  <dd className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                    <bdi dir="ltr" className="break-all">
+                      {data.pendingEmail}
+                    </bdi>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSending || isVerifying}
+                      onClick={() => start(data.pendingEmail ?? "")}
+                    >
+                      ارسال دوبارهٔ لینک
+                    </Button>
                   </dd>
                 </div>
               )}
             </dl>
+          )}
+        </section>
 
-            <form onSubmit={submit} className="space-y-4 border-t pt-5">
-              <div className="space-y-2">
-                <Label htmlFor="account-email">{data.email ? "ایمیل جدید" : "آدرس ایمیل"}</Label>
-                <Input
-                  id="account-email"
-                  name="email"
-                  type="email"
-                  dir="ltr"
-                  autoComplete="email"
-                  placeholder="name@example.com"
-                  required
-                  maxLength={254}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="account-password">رمز عبور فعلی</Label>
-                <Input
-                  id="account-password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                />
-              </div>
-              <Button type="submit" disabled={isSending || isVerifying}>
-                {isSending ? "در حال ارسال…" : "ارسال لینک تأیید"}
-              </Button>
-            </form>
-          </>
-        )}
-      </section>
+        <Dialog.Root
+          open={open}
+          onOpenChange={(next) => {
+            if (!isSending) setOpen(next);
+          }}
+        >
+          <Dialog.Portal>
+            <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/45" />
+            <Dialog.Popup
+              dir="rtl"
+              initialFocus={dialogTitle}
+              className="fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-xl"
+            >
+              <header className="mb-4 flex items-center justify-between gap-3">
+                <Dialog.Title tabIndex={-1} ref={dialogTitle} className="font-bold outline-none">
+                  {verified ? "تغییر ایمیل بازیابی" : "ثبت ایمیل بازیابی"}
+                </Dialog.Title>
+                <Dialog.Close
+                  disabled={isSending}
+                  aria-label="بستن"
+                  className="rounded-lg p-1.5 hover:bg-muted"
+                >
+                  <X className="size-4" />
+                </Dialog.Close>
+              </header>
+              <Dialog.Description className="mb-4 text-sm leading-6 text-muted-foreground">
+                لینک تأیید به این آدرس فرستاده می‌شود.
+              </Dialog.Description>
+              {open && (
+                <form onSubmit={submit} className="space-y-4">
+                  {phone && (
+                    <input type="hidden" name="username" autoComplete="username" value={phone} />
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="recovery-address">آدرس ایمیل بازیابی</Label>
+                    <Input
+                      id="recovery-address"
+                      name="recovery-address"
+                      type="email"
+                      dir="ltr"
+                      autoComplete="section-recovery email"
+                      placeholder="name@example.com"
+                      value={email}
+                      readOnly={!editingEmail}
+                      onFocus={() => setEditingEmail(true)}
+                      onChange={(event) => setEmail(event.target.value)}
+                      required
+                      maxLength={254}
+                      className="h-9 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="account-password">رمز عبور فعلی</Label>
+                    <Input
+                      id="account-password"
+                      name="password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      className="h-9 rounded-xl"
+                    />
+                  </div>
+                  {formError && <BusinessMessage error>{formError}</BusinessMessage>}
+                  <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isSending}
+                      onClick={() => setOpen(false)}
+                    >
+                      انصراف
+                    </Button>
+                    <Button type="submit" disabled={isSending || isVerifying || !email.trim()}>
+                      {isSending ? (
+                        <LoaderCircle className="size-4 animate-spin" />
+                      ) : (
+                        <Send className="size-4" />
+                      )}
+                      {isSending ? "در حال ارسال…" : "ارسال لینک تأیید"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </Dialog.Popup>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </div>
     </div>
   );
 }
