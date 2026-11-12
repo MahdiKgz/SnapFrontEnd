@@ -43,10 +43,12 @@ export function SpatialImagesPanel({
   mapRef,
   isMapReady,
   visible,
+  suppressLayers = false,
 }: {
   mapRef: RefObject<Map | null>;
   isMapReady: boolean;
   visible: boolean;
+  suppressLayers?: boolean;
 }) {
   const [shown, setShown] = useState<string[]>([]);
   const list = useGetSpatialImagesQuery(undefined, {
@@ -65,11 +67,12 @@ export function SpatialImagesPanel({
   const restricted =
     list.error && "status" in list.error && [401, 403].includes(Number(list.error.status));
   const collection = list.currentData?.data;
-  const readyLayers = restricted
-    ? []
-    : (collection?.images ?? []).filter(
-        (image) => image.status === "ready" && shown.includes(image.id),
-      );
+  const readyLayers =
+    restricted || suppressLayers
+      ? []
+      : (collection?.images ?? []).filter(
+          (image) => image.status === "ready" && shown.includes(image.id),
+        );
 
   const startUpload = async (file: File) => {
     if (!collection || upload.current) return;

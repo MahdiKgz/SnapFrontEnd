@@ -32,6 +32,10 @@ const SpatialImagesPanel = lazy(async () => ({
   default: (await import("@features/business/spatial-images")).SpatialImagesPanel,
 }));
 
+const CadastralDrawingPanel = lazy(async () => ({
+  default: (await import("@features/business/cadastral-drawing")).CadastralDrawingPanel,
+}));
+
 interface ReviewTarget {
   jobId: string;
   groupId: string;
@@ -55,6 +59,7 @@ export function MapWorkbench() {
   const [activeTool, setActiveTool] = useState<MapToolId | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [hasOpenedSpatialImages, setHasOpenedSpatialImages] = useState(false);
+  const [hasOpenedDrawing, setHasOpenedDrawing] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [topologyResult, setTopologyResult] = useState<TopologyUploadData | null>(null);
   const [selectedFeatureIndexes, setSelectedFeatureIndexes] = useState<number[]>([]);
@@ -260,9 +265,15 @@ export function MapWorkbench() {
 
   const selectTool = (tool: MapToolId) => {
     if (tool === "spatial-images") setHasOpenedSpatialImages(true);
+    if (tool === "cadastral-drawing") {
+      setHasOpenedDrawing(true);
+      setIsMeasuring(false);
+    }
     setActiveTool(tool);
     setIsPanelOpen(true);
   };
+
+  const drawingActive = activeTool === "cadastral-drawing" && !editorActive;
 
   return (
     <div className="relative h-dvh min-h-[32rem] w-full overflow-hidden bg-background" dir="rtl">
@@ -277,7 +288,7 @@ export function MapWorkbench() {
         </details>
       )}
       <PointerCoordinate isMapReady={isMapReady} mapRef={mapRef} />
-      {!editorActive && (
+      {!editorActive && !drawingActive && (
         <MapMeasurementTools
           mapRef={mapRef}
           isMapReady={isMapReady}
@@ -285,7 +296,7 @@ export function MapWorkbench() {
         />
       )}
 
-      {!editorActive && !isMeasuring && !isPanelOpen && (
+      {!editorActive && !drawingActive && !isMeasuring && !isPanelOpen && (
         <FeatureInspectionPanel mapRef={mapRef} isMapReady={isMapReady} />
       )}
 
@@ -459,6 +470,24 @@ export function MapWorkbench() {
                 mapRef={mapRef}
                 isMapReady={isMapReady}
                 visible={activeTool === "spatial-images" && isPanelOpen && !editorActive}
+                suppressLayers={drawingActive}
+              />
+            </Suspense>
+          </div>
+        )}
+        {hasOpenedDrawing && (
+          <div hidden={activeTool !== "cadastral-drawing"}>
+            <Suspense
+              fallback={
+                <p role="status" className="text-sm">
+                  در حال دریافت ابزارهای ترسیم…
+                </p>
+              }
+            >
+              <CadastralDrawingPanel
+                mapRef={mapRef}
+                isMapReady={isMapReady}
+                active={drawingActive}
               />
             </Suspense>
           </div>

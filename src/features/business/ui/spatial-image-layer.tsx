@@ -18,9 +18,10 @@ interface Props {
   id: string;
   mapRef: RefObject<Map | null>;
   isMapReady: boolean;
+  onStatus?: (status: "loading" | "ready" | "failed") => void;
 }
 
-export function SpatialImageLayer({ id, mapRef, isMapReady }: Props) {
+export function SpatialImageLayer({ id, mapRef, isMapReady, onStatus }: Props) {
   const [preview] = useLazyGetSpatialImagePreviewQuery();
   const [error, setError] = useState(false);
 
@@ -96,10 +97,14 @@ export function SpatialImageLayer({ id, mapRef, isMapReady }: Props) {
         );
       map.addLayer({ id: layerId, type: "raster", source: layerId }, above?.id);
       map.fitBounds(bounds, { padding: 64, maxZoom, duration: 500 });
+      onStatus?.("ready");
     };
 
     void show().catch(() => {
-      if (!signal.aborted) setError(true);
+      if (!signal.aborted) {
+        setError(true);
+        onStatus?.("failed");
+      }
     });
     return () => {
       controller.abort();
@@ -109,8 +114,9 @@ export function SpatialImageLayer({ id, mapRef, isMapReady }: Props) {
         if (map.getSource(layerId)) map.removeSource(layerId);
       }
       registered.tiles.delete(key);
+      onStatus?.("loading");
     };
-  }, [id, isMapReady, mapRef, preview]);
+  }, [id, isMapReady, mapRef, onStatus, preview]);
 
   return error ? (
     <p role="alert" className="text-xs text-destructive">

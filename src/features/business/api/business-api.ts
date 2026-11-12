@@ -2,6 +2,7 @@ import { topologyApi } from "@/features/topology/api/topology-api";
 
 import { type AuthState, setCredentials } from "@features/auth";
 
+import type { Drawing } from "../model/cadastral-drawing";
 import type { SpatialImage, SpatialImageList, SpatialImageTicket } from "../model/spatial-images";
 import type {
   AdminUser,
@@ -42,6 +43,17 @@ export const businessApi = enhanced.injectEndpoints({
     getSpatialImages: builder.query<Envelope<SpatialImageList>, void>({
       query: () => spatialImagesPath,
       providesTags: [spatialImagesTag],
+    }),
+    getCadastralDrawing: builder.query<Envelope<Drawing>, string>({
+      query: (id) => `${spatialImagesPath}/${id}/drawing`,
+      keepUnusedDataFor: 0,
+    }),
+    saveCadastralDrawing: builder.mutation<Envelope<Drawing>, { id: string; drawing: Drawing }>({
+      query: ({ id, drawing }) => ({
+        url: `${spatialImagesPath}/${id}/drawing`,
+        method: "PUT",
+        body: drawing,
+      }),
     }),
     reserveSpatialImage: builder.mutation<
       Envelope<SpatialImageTicket>,
@@ -181,6 +193,8 @@ export const {
   useGetBusinessPlansQuery,
   useGetBusinessContextQuery,
   useGetSpatialImagesQuery,
+  useGetCadastralDrawingQuery,
+  useSaveCadastralDrawingMutation,
   useReserveSpatialImageMutation,
   useCompleteSpatialImageMutation,
   useLazyGetSpatialImagePreviewQuery,
