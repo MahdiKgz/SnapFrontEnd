@@ -104,6 +104,9 @@ function Workspace({
   const [save, saving] = useSaveCadastralDrawingMutation();
   const shapes = history.present;
   const selected = shapes.find(({ id }) => id === selectedId);
+  const intersectionPath =
+    mode === "select" && selected?.kind === "line" ? selected.vertices : vertices;
+  const canSuggestIntersection = mode !== "rectangle" && intersectionPath.length >= 4;
   const dirty = shapes !== saved.features;
   const pending = dirty || vertices.length > 0 || saving.isLoading;
   const navigation = useBlocker(
@@ -149,15 +152,25 @@ function Workspace({
   };
 
   const finish = () => {
-    if (mode === "line" || mode === "parcel") create(mode, intersection ?? vertices);
+    if (intersection) {
+      if (mode === "select" && selected?.kind === "line") {
+        const parcel: Shape = { ...selected, kind: "parcel", vertices: intersection };
+        commit(shapes.map((shape) => (shape.id === parcel.id ? parcel : shape)));
+        setIntersection(undefined);
+      } else {
+        create("parcel", intersection);
+      }
+      return;
+    }
+    if (mode === "line" || mode === "parcel") create(mode, vertices);
   };
   const suggestIntersection = () => {
-    if (mode !== "parcel" || vertices.length < 4) return;
+    if (!canSuggestIntersection) return;
     if (intersection) {
       finish();
       return;
     }
-    const completed = completeAtIntersection(vertices);
+    const completed = completeAtIntersection(intersectionPath);
     if (!completed) {
       setMessage({
         error: true,
@@ -194,6 +207,7 @@ function Workspace({
   const changeMode = (value: Mode) => {
     if (vertices.length || !active) return;
     setMode(value);
+    setIntersection(undefined);
     setSelectedId(undefined);
     setMessage(undefined);
   };
@@ -222,7 +236,7 @@ function Workspace({
     setMessage(undefined);
   };
   const redo = () => {
-    if (!vertices.length && history.future.length) {
+    if (!intersection && !vertices.length && history.future.length) {
       setHistory({
         past: [...history.past, shapes],
         present: history.future[0],
@@ -232,7 +246,7 @@ function Workspace({
     }
   };
   const remove = () => {
-    if (!selected) return;
+    if (intersection || !selected) return;
     commit(shapes.filter(({ id }) => id !== selected.id));
     setSelectedId(undefined);
   };
@@ -279,17 +293,16 @@ function Workspace({
   };
 
   const keyboard = useEffectEvent((event: KeyboardEvent) => {
+    const key = event.key.toLowerCase();
     if (
       event.defaultPrevented ||
       event.repeat ||
       event.altKey ||
       (event.target instanceof Element &&
-        event.target.closest(
-          "input, textarea, select, button, [contenteditable=true], [role=dialog]",
-        ))
+        (event.target.closest("input, textarea, select, [contenteditable=true], [role=dialog]") ||
+          (key === "enter" && event.target.closest("button"))))
     )
       return;
-    const key = event.key.toLowerCase();
     const command = event.ctrlKey || event.metaKey;
     if (command && key === "z") {
       if (event.shiftKey) redo();
@@ -300,14 +313,14 @@ function Workspace({
     else if (key === "escape") cancel();
     else if (
       key === "enter" &&
-      (mode === "line" || mode === "parcel") &&
-      vertices.length >= MIN_VERTICES[mode]
+      (intersection ||
+        ((mode === "line" || mode === "parcel") && vertices.length >= MIN_VERTICES[mode]))
     )
       finish();
     else if (key === "backspace" && vertices.length) undo();
     else if (key === "delete") remove();
     else if (key === "f3") setSnapping((value) => !value);
-    else if (key === "f7" && mode === "parcel" && vertices.length >= 4) suggestIntersection();
+    else if (key === "f7" && canSuggestIntersection) suggestIntersection();
     else if (key === "f8") setOrtho((value) => !value);
     else {
       const tool = tools.find((item) => item.key.toLowerCase() === key);
@@ -383,12 +396,39 @@ function Workspace({
             افقی و عمودی
           </Button>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={intersection ? "default" : "outline"}
+            aria-keyshortcuts={intersection ? "F7 Enter" : "F7"}
+            disabled={!canSuggestIntersection}
+            onClick={suggestIntersection}
+          >
+            {intersection ? "تأیید تقاطع" : "پیشنهاد تقاطع"}
+            <kbd dir="ltr" className="opacity-65">
+              F7
+            </kbd>
+          </Button>
+          {intersection && (
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label="لغو پیشنهاد تقاطع"
+              title="لغو پیشنهاد تقاطع"
+              onClick={cancel}
+            >
+              <X className="size-4" />
+            </Button>
+          )}
+        </div>
         <p className="min-h-9 text-xs leading-5 text-muted-foreground">
           {intersection
             ? "گوشهٔ پیشنهادی روی نقشه مشخص است. برای ثبت Enter و برای بازگشت Esc را بزنید."
-            : prompts[mode]}
+            : mode === "select" && !canSuggestIntersection
+              ? "عارضه‌ای را برای ویرایش انتخاب کنید. برای پیشنهاد تقاطع، یک چندخطی با دست‌کم ۴ رأس انتخاب کنید."
+              : prompts[mode]}
         </p>
-        {vertices.length > 0 && (
+        {vertices.length > 0 && !intersection && (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border p-2">
             <span className="me-auto text-xs text-muted-foreground">
               {count(vertices.length)} رأس
@@ -396,27 +436,19 @@ function Workspace({
             {mode !== "rectangle" && (
               <Button size="sm" disabled={!canFinish} onClick={finish}>
                 <Check className="size-4" />
-                {intersection ? "تأیید تقاطع" : "پایان ترسیم"}
+                پایان ترسیم
               </Button>
             )}
             <Button
               size="icon"
               variant="ghost"
-              aria-label={intersection ? "لغو پیشنهاد تقاطع" : "لغو ترسیم"}
-              title={intersection ? "لغو پیشنهاد تقاطع" : "لغو ترسیم"}
+              aria-label="لغو ترسیم"
+              title="لغو ترسیم"
               onClick={cancel}
             >
               <X className="size-4" />
             </Button>
           </div>
-        )}
-        {mode === "parcel" && vertices.length >= 4 && !intersection && (
-          <Button size="sm" variant="outline" aria-keyshortcuts="F7" onClick={suggestIntersection}>
-            تکمیل از تقاطع{" "}
-            <kbd dir="ltr" className="opacity-65">
-              F7
-            </kbd>
-          </Button>
         )}
         <div className="flex flex-wrap gap-2">
           <Button
@@ -424,7 +456,7 @@ function Workspace({
             variant="outline"
             title="واگرد"
             aria-label="واگرد"
-            disabled={!vertices.length && !history.past.length}
+            disabled={!intersection && !vertices.length && !history.past.length}
             onClick={undo}
           >
             <Undo2 />
@@ -434,7 +466,7 @@ function Workspace({
             variant="outline"
             title="بازانجام"
             aria-label="بازانجام"
-            disabled={!!vertices.length || !history.future.length}
+            disabled={!!intersection || !!vertices.length || !history.future.length}
             onClick={redo}
           >
             <Redo2 />
@@ -514,8 +546,8 @@ function Workspace({
       <details className="text-xs leading-6 text-muted-foreground">
         <summary className="cursor-pointer">میانبرها</summary>
         <p>
-          برای تکمیل از تقاطع، ضلع اول و آخر را در امتداد دو مرزی بکشید که باید به هم برسند. F7 گوشه
-          را پیشنهاد می‌دهد.
+          F7 تقاطع امتداد ضلع اول و آخر را برای چندخطی انتخاب‌شده یا ترسیم در حال انجام پیشنهاد
+          می‌دهد.
         </p>
         <p>
           پایان با Enter، لغو با Esc، حذف با Delete، واگرد با Ctrl+Z و بازانجام با Ctrl+Shift+Z.

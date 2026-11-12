@@ -39,9 +39,9 @@ const lineFeature = (coordinates: Vertex[]): Feature => ({
   properties: {},
   geometry: { type: "LineString", coordinates },
 });
-const polygonFeature = (vertices: Vertex[]): Feature => ({
+const polygonFeature = (vertices: Vertex[], role?: string): Feature => ({
   type: "Feature",
-  properties: {},
+  properties: { role },
   geometry: { type: "Polygon", coordinates: [[...vertices, vertices[0]]] },
 });
 
@@ -169,13 +169,20 @@ export function useCadastralMap(options: Options) {
       id: PREVIEW_FILL,
       source: PREVIEW,
       type: "fill",
-      paint: { "fill-color": "#f59e0b", "fill-opacity": 0.18 },
+      paint: {
+        "fill-color": ["case", ["==", ["get", "role"], "intersection"], "#22c55e", "#f59e0b"],
+        "fill-opacity": 0.18,
+      },
     });
     map.addLayer({
       id: GUIDE,
       source: PREVIEW,
       type: "line",
-      paint: { "line-color": "#fbbf24", "line-width": 3, "line-dasharray": [2, 1] },
+      paint: {
+        "line-color": ["case", ["==", ["get", "role"], "intersection"], "#22c55e", "#fbbf24"],
+        "line-width": 3,
+        "line-dasharray": [2, 1],
+      },
     });
     map.addLayer({
       id: POINTS,
@@ -261,7 +268,14 @@ export function useCadastralMap(options: Options) {
     };
     const down = (event: PointerEvent) => {
       const state = current();
-      if (event.button !== 0 || drag || state.mode !== "select" || !state.selected) return;
+      if (
+        event.button !== 0 ||
+        drag ||
+        state.intersection ||
+        state.mode !== "select" ||
+        !state.selected
+      )
+        return;
       const start = screenPoint(event);
       const index = state.selected.vertices.findIndex(
         (vertex) =>
@@ -369,10 +383,10 @@ export function useCadastralMap(options: Options) {
       ?.getSource<GeoJSONSource>(PREVIEW)
       ?.setData(
         collection(
-          mode === "select"
-            ? (selected?.vertices.map((vertex) => pointFeature(vertex, "vertex")) ?? [])
-            : intersection
-              ? [polygonFeature(intersection), pointFeature(intersection[0], "snap")]
+          intersection
+            ? [polygonFeature(intersection, "intersection"), pointFeature(intersection[0], "snap")]
+            : mode === "select"
+              ? (selected?.vertices.map((vertex) => pointFeature(vertex, "vertex")) ?? [])
               : draftFeatures(mode, vertices),
         ),
       );
