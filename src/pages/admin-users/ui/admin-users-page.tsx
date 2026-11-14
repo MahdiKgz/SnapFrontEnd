@@ -33,6 +33,8 @@ import type { AdminUser } from "@features/business";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
+import { MotionDialogBackdrop, MotionDialogPopup } from "@shared/ui/motion-dialog";
+import { CustomSelect } from "@shared/ui/select";
 
 const date = (value: string) => new Date(value).toLocaleDateString("fa-IR");
 const normalizePhone = (value: string) =>
@@ -53,9 +55,6 @@ const statuses: Record<string, string> = {
   cancelled: "لغوشده",
   unavailable: "ناموجود",
 };
-const selectClass =
-  "h-9 rounded-xl border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
-
 export default function AdminUsersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -168,36 +167,34 @@ export default function AdminUsersPage() {
                 className="h-9 rounded-xl pr-9"
               />
             </div>
-            <select
+            <CustomSelect
               aria-label="فیلتر نقش"
               value={role}
-              onChange={(event) => {
-                setRole(event.target.value);
+              onValueChange={(value) => {
+                setRole(value);
                 setSkip(0);
               }}
-              className={selectClass}
-            >
-              <option value="">همهٔ نقش‌ها</option>
-              <option value="user">دارای نقش کاربر</option>
-              <option value="writer">نویسنده</option>
-              <option value="admin">مدیر</option>
-            </select>
-            <select
+              options={[
+                { value: "", label: "همهٔ نقش‌ها" },
+                { value: "user", label: "دارای نقش کاربر" },
+                { value: "writer", label: "نویسنده" },
+                { value: "admin", label: "مدیر" },
+              ]}
+              className="rounded-xl"
+            />
+            <CustomSelect
               aria-label="فیلتر پلن"
               value={plan}
-              onChange={(event) => {
-                setPlan(event.target.value);
+              onValueChange={(value) => {
+                setPlan(value);
                 setSkip(0);
               }}
-              className={selectClass}
-            >
-              <option value="">همهٔ پلن‌ها</option>
-              {available.map((item) => (
-                <option key={item.code} value={item.code}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "همهٔ پلن‌ها" },
+                ...available.map((item) => ({ value: item.code, label: item.name })),
+              ]}
+              className="rounded-xl"
+            />
             <Button
               variant="outline"
               size="icon-lg"
@@ -350,21 +347,19 @@ export default function AdminUsersPage() {
         <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border p-4 text-xs text-muted-foreground">
           <label className="flex items-center gap-2">
             تعداد در صفحه
-            <select
+            <CustomSelect
               aria-label="تعداد کاربران در صفحه"
-              value={limit}
-              onChange={(event) => {
-                setLimit(Number(event.target.value));
+              value={String(limit)}
+              onValueChange={(value) => {
+                setLimit(Number(value));
                 setSkip(0);
               }}
-              className="rounded-lg border border-input bg-background px-2 py-1"
-            >
-              {[10, 25, 50].map((value) => (
-                <option key={value} value={value}>
-                  {count(value)}
-                </option>
-              ))}
-            </select>
+              options={[10, 25, 50].map((value) => ({
+                value: String(value),
+                label: count(value),
+              }))}
+              className="h-8 min-w-20 px-2 text-xs"
+            />
           </label>
           <span>{page ? `${count(page.pagination.total)} کاربر` : "—"}</span>
           <div className="flex items-center gap-3">
@@ -478,8 +473,8 @@ function EditUserDialog({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" />
-        <Dialog.Popup
+        <MotionDialogBackdrop className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" />
+        <MotionDialogPopup
           dir="rtl"
           className="fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl"
         >
@@ -566,7 +561,7 @@ function EditUserDialog({
               </Button>
             </div>
           </form>
-        </Dialog.Popup>
+        </MotionDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );
@@ -583,8 +578,8 @@ function UserActivityDialog({ userId, onClose }: { userId: string; onClose: () =
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" />
-        <Dialog.Popup
+        <MotionDialogBackdrop className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" />
+        <MotionDialogPopup
           dir="rtl"
           className="fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-xl md:p-6"
         >
@@ -662,7 +657,7 @@ function UserActivityDialog({ userId, onClose }: { userId: string; onClose: () =
               </section>
             </div>
           )}
-        </Dialog.Popup>
+        </MotionDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

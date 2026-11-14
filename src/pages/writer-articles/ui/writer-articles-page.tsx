@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { CustomSelect } from "@/shared/ui/select";
+import { motion, useReducedMotion } from "framer-motion";
 import { FilePenLine, LoaderCircle, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import {
@@ -38,6 +40,9 @@ const formatDate = (value: string) =>
   );
 
 function ArticleDialog({ article, onClose }: { article?: ArticleDetail; onClose: () => void }) {
+  const [isClosing, setIsClosing] = useState(false);
+  const closeTimer = useRef<number | null>(null);
+  const shouldReduceMotion = useReducedMotion();
   const [form, setForm] = useState<ArticleInput>(
     article ? { ...article, coverImageUrl: article.coverImageUrl ?? "" } : emptyArticle,
   );
@@ -46,6 +51,23 @@ function ArticleDialog({ article, onClose }: { article?: ArticleDetail; onClose:
   const [create, creating] = useCreateArticleMutation();
   const [update, updating] = useUpdateArticleMutation();
   const { data: categories } = useGetArticleCategoriesQuery();
+  const close = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    closeTimer.current = window.setTimeout(onClose, shouldReduceMotion ? 0 : 180);
+  }, [isClosing, onClose, shouldReduceMotion]);
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    };
+  }, [close]);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
@@ -59,30 +81,44 @@ function ArticleDialog({ article, onClose }: { article?: ArticleDetail; onClose:
     try {
       if (article) await update({ id: article.id, body }).unwrap();
       else await create(body).unwrap();
-      onClose();
+      close();
     } catch (reason) {
       setError(messageOf(reason));
     }
   };
   const busy = creating.isLoading || updating.isLoading;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button
+    <motion.div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}
+      initial={shouldReduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: isClosing ? 0 : 1 }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
+    >
+      <motion.button
         type="button"
         aria-label="بستن پنجره"
         className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
-        onClick={onClose}
+        initial={shouldReduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: isClosing ? 0 : 1 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
+        onClick={close}
       />
-      <form
+      <motion.form
         role="dialog"
         aria-modal="true"
         aria-label={article ? "ویرایش مقاله" : "مقاله جدید"}
         onSubmit={(event) => void submit(event)}
         className="relative z-10 max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl"
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 20, scale: 0.96 }}
+        animate={isClosing ? { opacity: 0, y: 12, scale: 0.97 } : { opacity: 1, y: 0, scale: 1 }}
+        transition={{
+          duration: shouldReduceMotion ? 0 : isClosing ? 0.16 : 0.26,
+          ease: isClosing ? "easeIn" : [0.22, 1, 0.36, 1],
+        }}
       >
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-5 py-4 backdrop-blur">
           <h2 className="font-bold">{article ? "ویرایش مقاله" : "مقاله جدید"}</h2>
-          <Button type="button" size="icon" variant="ghost" aria-label="بستن" onClick={onClose}>
+          <Button type="button" size="icon" variant="ghost" aria-label="بستن" onClick={close}>
             <X />
           </Button>
         </header>
@@ -117,14 +153,16 @@ function ArticleDialog({ article, onClose }: { article?: ArticleDetail; onClose:
           </label>
           <label className="space-y-2">
             <span className="text-xs font-semibold">وضعیت</span>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            <CustomSelect
+              aria-label="وضعیت مقاله"
+              className="w-full rounded-md"
               value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as ArticleStatus })}
-            >
-              <option value="draft">پیش‌نویس</option>
-              <option value="published">منتشرشده</option>
-            </select>
+              onValueChange={(value) => setForm({ ...form, status: value as ArticleStatus })}
+              options={[
+                { value: "draft", label: "پیش‌نویس" },
+                { value: "published", label: "منتشرشده" },
+              ]}
+            />
           </label>
           <label className="space-y-2 sm:col-span-2">
             <span className="text-xs font-semibold">خلاصه</span>
@@ -187,8 +225,8 @@ function ArticleDialog({ article, onClose }: { article?: ArticleDetail; onClose:
             {article ? "ذخیره تغییرات" : "افزودن مقاله"}
           </Button>
         </footer>
-      </form>
-    </div>
+      </motion.form>
+    </motion.div>
   );
 }
 
@@ -256,18 +294,20 @@ export default function WriterArticlesPage() {
                 placeholder="جست‌وجوی سریع عنوان، خلاصه یا کلمه کلیدی"
               />
             </label>
-            <select
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            <CustomSelect
+              aria-label="فیلتر وضعیت مقاله"
+              className="rounded-md"
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
+              onValueChange={(value) => {
+                setStatus(value);
                 setPage(0);
               }}
-            >
-              <option value="">همه وضعیت‌ها</option>
-              <option value="draft">پیش‌نویس</option>
-              <option value="published">منتشرشده</option>
-            </select>
+              options={[
+                { value: "", label: "همه وضعیت‌ها" },
+                { value: "draft", label: "پیش‌نویس" },
+                { value: "published", label: "منتشرشده" },
+              ]}
+            />
             <Input
               value={keyword}
               onChange={(e) => {
@@ -378,18 +418,20 @@ export default function WriterArticlesPage() {
           <footer className="flex items-center justify-between border-t border-border p-3 text-xs">
             <label className="flex items-center gap-2">
               تعداد در صفحه
-              <select
-                className="rounded-md border border-input bg-background p-1"
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
+              <CustomSelect
+                aria-label="تعداد مقاله در صفحه"
+                className="h-8 min-w-20 rounded-md px-2 text-xs"
+                value={String(limit)}
+                onValueChange={(value) => {
+                  setLimit(Number(value));
                   setPage(0);
                 }}
-              >
-                <option value={10}>۱۰</option>
-                <option value={20}>۲۰</option>
-                <option value={50}>۵۰</option>
-              </select>
+                options={[
+                  { value: "10", label: "۱۰" },
+                  { value: "20", label: "۲۰" },
+                  { value: "50", label: "۵۰" },
+                ]}
+              />
             </label>
             <div className="flex items-center gap-2">
               <Button

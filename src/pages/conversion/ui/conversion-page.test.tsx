@@ -22,6 +22,12 @@ const chooseFile = (name = "parcels.geojson") => {
     target: { files: [new File(["{}"], name)] },
   });
 };
+const chooseOption = async (label: string, option: string) => {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  const item = await screen.findByRole("option", { name: option });
+  fireEvent.pointerDown(item, { pointerType: "mouse" });
+  fireEvent.click(item);
+};
 beforeEach(() => {
   mocks.status = {};
   mocks.convert.mockReset();
@@ -53,7 +59,7 @@ describe("standalone conversion form", () => {
   it("uploads options without parsing the file locally and offers a server-generated download", async () => {
     render(<ConversionPage />);
     chooseFile();
-    fireEvent.change(screen.getByLabelText("فرمت خروجی"), { target: { value: "shapefile" } });
+    await chooseOption("فرمت خروجی", "Shapefile (ZIP)");
     fireEvent.change(screen.getByLabelText("سیستم مختصات مقصد (اختیاری)"), {
       target: { value: "epsg:32639" },
     });

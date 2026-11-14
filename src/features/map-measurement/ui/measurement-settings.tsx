@@ -1,3 +1,5 @@
+import { MotionPopoverPopup } from "@/shared/ui/motion-popover";
+import { CustomSelect } from "@/shared/ui/select";
 import { Tooltip } from "@/shared/ui/tooltip";
 import { Popover } from "@base-ui/react/popover";
 import { Settings, X } from "lucide-react";
@@ -31,7 +33,7 @@ export function MeasurementSettings({
           positionMethod="fixed"
           className="z-50"
         >
-          <Popover.Popup
+          <MotionPopoverPopup
             aria-label="تنظیمات اندازه‌گیری"
             dir="rtl"
             className="w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-popover p-4 text-popover-foreground shadow-xl"
@@ -48,38 +50,36 @@ export function MeasurementSettings({
             <div className="space-y-4">
               <label className="block text-xs font-medium">
                 طول و محیط
-                <select
+                <CustomSelect
+                  aria-label="طول و محیط"
                   value={units.length}
-                  onChange={(event) =>
-                    onChange({ ...units, length: event.target.value as MeasurementUnits["length"] })
+                  onValueChange={(value) =>
+                    onChange({ ...units, length: value as MeasurementUnits["length"] })
                   }
-                  className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {Object.entries(LENGTH_UNITS).map(([value, { label }]) => (
-                    <option key={value} value={value}>
-                      {label} ({value})
-                    </option>
-                  ))}
-                </select>
+                  options={Object.entries(LENGTH_UNITS).map(([value, { label }]) => ({
+                    value,
+                    label: `${label} (${value})`,
+                  }))}
+                  className="mt-2 w-full"
+                />
               </label>
               <label className="block text-xs font-medium">
                 مساحت
-                <select
+                <CustomSelect
+                  aria-label="مساحت"
                   value={units.area}
-                  onChange={(event) =>
-                    onChange({ ...units, area: event.target.value as MeasurementUnits["area"] })
+                  onValueChange={(value) =>
+                    onChange({ ...units, area: value as MeasurementUnits["area"] })
                   }
-                  className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {Object.entries(AREA_UNITS).map(([value, { label }]) => (
-                    <option key={value} value={value}>
-                      {label} ({value})
-                    </option>
-                  ))}
-                </select>
+                  options={Object.entries(AREA_UNITS).map(([value, { label }]) => ({
+                    value,
+                    label: `${label} (${value})`,
+                  }))}
+                  className="mt-2 w-full"
+                />
               </label>
             </div>
-          </Popover.Popup>
+          </MotionPopoverPopup>
         </Popover.Positioner>
       </Popover.Portal>
     </Popover.Root>

@@ -60,6 +60,12 @@ function setup() {
   return { ...view, map, mapRef, click, emit, sources, layers, listeners };
 }
 
+const chooseOpenOption = async (option: string) => {
+  const item = await screen.findByRole("option", { name: option });
+  fireEvent.pointerDown(item, { pointerType: "mouse" });
+  fireEvent.click(item);
+};
+
 describe("map measurement tools", () => {
   beforeEach(() => {
     markers.length = 0;
@@ -80,7 +86,8 @@ describe("map measurement tools", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "تنظیم واحد اندازه‌گیری" }));
     const length = await screen.findByRole("combobox", { name: "طول و محیط" });
-    fireEvent.change(length, { target: { value: "m" } });
+    fireEvent.click(length);
+    await chooseOpenOption("متر (m)");
     expect(screen.getByRole("status").textContent).toContain("۱۱۱٬۱۹۵ m");
     expect(document.querySelector('[aria-label="طول اندازه‌گیری‌شده: ۱۱۱٬۱۹۵ m"]')).toBeTruthy();
     expect(map.addSource).toHaveBeenCalledTimes(1);
@@ -96,12 +103,10 @@ describe("map measurement tools", () => {
   it("applies area units to a full feature and shares length units with perimeter", async () => {
     const { click, map, sources } = setup();
     fireEvent.click(screen.getByRole("button", { name: "تنظیم واحد اندازه‌گیری" }));
-    fireEvent.change(await screen.findByRole("combobox", { name: "مساحت" }), {
-      target: { value: "ha" },
-    });
-    fireEvent.change(screen.getByRole("combobox", { name: "طول و محیط" }), {
-      target: { value: "ft" },
-    });
+    fireEvent.click(await screen.findByRole("combobox", { name: "مساحت" }));
+    await chooseOpenOption("هکتار (ha)");
+    fireEvent.click(screen.getByRole("combobox", { name: "طول و محیط" }));
+    await chooseOpenOption("فوت (ft)");
     fireEvent.click(screen.getByRole("button", { name: "بستن تنظیمات" }));
     const feature = {
       type: "Feature",

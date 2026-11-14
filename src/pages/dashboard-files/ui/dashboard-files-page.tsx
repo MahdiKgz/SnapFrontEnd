@@ -3,7 +3,10 @@ import type { FormEvent, ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { MotionPopoverPopup } from "@/shared/ui/motion-popover";
+import { CustomSelect } from "@/shared/ui/select";
 import { Popover } from "@base-ui/react/popover";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -125,14 +128,15 @@ function Modal({
   title: string;
 }) {
   const [isClosing, setIsClosing] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
   const isClosingRef = useRef(false);
   const closeTimer = useRef<number | null>(null);
   const close = useCallback(() => {
     if (isClosingRef.current) return;
     isClosingRef.current = true;
     setIsClosing(true);
-    closeTimer.current = window.setTimeout(onClose, 180);
-  }, [onClose]);
+    closeTimer.current = window.setTimeout(onClose, shouldReduceMotion ? 0 : 180);
+  }, [onClose, shouldReduceMotion]);
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -146,30 +150,32 @@ function Modal({
   }, [close]);
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 motion-reduce:animate-none ${
-        isClosing
-          ? "pointer-events-none animate-out fade-out duration-200"
-          : "animate-in fade-in duration-200"
-      }`}
+    <motion.div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? "pointer-events-none" : ""}`}
+      initial={shouldReduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: isClosing ? 0 : 1 }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
     >
-      <button
+      <motion.button
         type="button"
         aria-label="بستن پنجره"
-        className={`absolute inset-0 bg-slate-950/70 backdrop-blur-sm motion-reduce:animate-none ${
-          isClosing ? "animate-out fade-out-0 duration-200" : "animate-in fade-in-0 duration-200"
-        }`}
+        className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+        initial={shouldReduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: isClosing ? 0 : 1 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
         onClick={close}
       />
-      <section
+      <motion.section
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`relative z-10 max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl motion-reduce:animate-none ${
-          isClosing
-            ? "animate-out fade-out-0 zoom-out-95 slide-out-to-bottom-3 duration-200 ease-in"
-            : "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out"
-        }`}
+        className="relative z-10 max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl"
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 20, scale: 0.96 }}
+        animate={isClosing ? { opacity: 0, y: 12, scale: 0.97 } : { opacity: 1, y: 0, scale: 1 }}
+        transition={{
+          duration: shouldReduceMotion ? 0 : isClosing ? 0.16 : 0.26,
+          ease: isClosing ? "easeIn" : [0.22, 1, 0.36, 1],
+        }}
       >
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-5 py-4 backdrop-blur">
           <h2 className="text-base font-bold text-foreground">{title}</h2>
@@ -179,8 +185,8 @@ function Modal({
         </header>
         {/* eslint-disable-next-line react-hooks/refs -- The render prop receives the callback without invoking it. */}
         {typeof children === "function" ? children(close) : children}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
 
@@ -485,7 +491,7 @@ function DeletePopconfirm({
           positionMethod="fixed"
           className="z-50 data-[anchor-hidden]:hidden"
         >
-          <Popover.Popup
+          <MotionPopoverPopup
             role="dialog"
             aria-label="تأیید حذف فایل"
             className="w-72 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-popover p-4 text-right shadow-xl"
@@ -518,7 +524,7 @@ function DeletePopconfirm({
                 {isDeleting ? "در حال حذف..." : "بله، حذف شود"}
               </Button>
             </div>
-          </Popover.Popup>
+          </MotionPopoverPopup>
         </Popover.Positioner>
       </Popover.Portal>
     </Popover.Root>
@@ -799,21 +805,20 @@ export function FileManagementDashboard() {
             </span>
             <label className="flex items-center gap-2">
               تعداد در صفحه
-              <select
-                value={limit}
+              <CustomSelect
+                aria-label="تعداد در صفحه"
+                value={String(limit)}
                 disabled={isFetching}
-                onChange={(event) => {
-                  setLimit(Number(event.target.value));
+                onValueChange={(value) => {
+                  setLimit(Number(value));
                   setSkip(0);
                 }}
-                className="h-8 rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-              >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size.toLocaleString("fa-IR")}
-                  </option>
-                ))}
-              </select>
+                options={[10, 20, 50].map((size) => ({
+                  value: String(size),
+                  label: size.toLocaleString("fa-IR"),
+                }))}
+                className="h-8 min-w-20 px-2 text-xs"
+              />
             </label>
             <div className="flex items-center gap-2">
               <Button

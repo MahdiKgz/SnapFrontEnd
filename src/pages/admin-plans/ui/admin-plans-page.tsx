@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { CustomSelect } from "@/shared/ui/select";
 import { LoaderCircle, RefreshCw, Search } from "lucide-react";
 
 import {
@@ -99,22 +100,18 @@ export default function AdminPlansPage() {
               className="pr-9"
             />
           </div>
-          <select
+          <CustomSelect
             aria-label="فیلتر پلن"
-            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
             value={plan}
-            onChange={(event) => {
-              setPlan(event.target.value);
+            onValueChange={(value) => {
+              setPlan(value);
               setSkip(0);
             }}
-          >
-            <option value="">همهٔ پلن‌ها</option>
-            {available.map((item) => (
-              <option key={item.code} value={item.code}>
-                {item.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "همهٔ پلن‌ها" },
+              ...available.map((item) => ({ value: item.code, label: item.name })),
+            ]}
+          />
           <Button
             variant="outline"
             size="icon"
@@ -179,21 +176,19 @@ export default function AdminPlansPage() {
                       </label>
                     </td>
                     <td className="px-5 py-4">
-                      <select
+                      <CustomSelect
                         aria-label={`تغییر پلن ${user.name}`}
                         value={user.planCode}
                         disabled={!available.length || assigning.isLoading}
-                        onChange={(event) =>
-                          setSelection({ user, planCode: event.target.value as PlanCode })
+                        onValueChange={(value) =>
+                          setSelection({ user, planCode: value as PlanCode })
                         }
-                        className="h-9 max-w-48 rounded-lg border border-input bg-background px-2 text-xs"
-                      >
-                        {available.map((item) => (
-                          <option key={item.code} value={item.code}>
-                            {item.name}
-                          </option>
-                        ))}
-                      </select>
+                        options={available.map((item) => ({
+                          value: item.code,
+                          label: item.name,
+                        }))}
+                        className="max-w-48 px-2 text-xs"
+                      />
                     </td>
                   </tr>
                 ))}
@@ -211,21 +206,19 @@ export default function AdminPlansPage() {
         <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border p-4 text-xs text-muted-foreground">
           <label className="flex items-center gap-2">
             تعداد در صفحه
-            <select
+            <CustomSelect
               aria-label="تعداد کاربران در صفحه"
-              value={limit}
-              onChange={(event) => {
-                setLimit(Number(event.target.value));
+              value={String(limit)}
+              onValueChange={(value) => {
+                setLimit(Number(value));
                 setSkip(0);
               }}
-              className="rounded border border-input bg-background px-2 py-1"
-            >
-              {[10, 25, 50].map((size) => (
-                <option key={size} value={size}>
-                  {count(size)}
-                </option>
-              ))}
-            </select>
+              options={[10, 25, 50].map((size) => ({
+                value: String(size),
+                label: count(size),
+              }))}
+              className="h-8 min-w-20 px-2 text-xs"
+            />
           </label>
           <span>{page ? `${count(page.pagination.total)} کاربر` : "—"}</span>
           <div className="flex items-center gap-3">

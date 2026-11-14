@@ -11,6 +11,7 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/shared/ui/navigation-menu";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, LayoutDashboard, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -21,6 +22,7 @@ function Header() {
   const dispatch = useAppDispatch();
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
   const [revokeSession, { isLoading: isLoggingOut }] = useLogoutMutation();
   const { status, user } = useAppSelector((state) => state.auth);
   const isAuthenticated = status === "authenticated" && user !== null;
@@ -80,9 +82,10 @@ function Header() {
               {/* صفحه اصلی */}
               <NavigationMenuItem>
                 <NavigationMenuLink
+                  render={<Link to="/" />}
                   className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
                 >
-                  <Link to="/">صفحه اصلی</Link>
+                  صفحه اصلی
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
@@ -95,11 +98,17 @@ function Header() {
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="w-[220px] p-2 bg-card border border-border rounded-lg shadow-xl flex flex-col gap-1">
-                    <NavigationMenuLink className="block p-2 text-xs rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                      <Link to="/#features">موتور رفع خطای توپولوژی</Link>
+                    <NavigationMenuLink
+                      render={<Link to="/#features" />}
+                      className="block p-2 text-xs rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      موتور رفع خطای توپولوژی
                     </NavigationMenuLink>
-                    <NavigationMenuLink className="block p-2 text-xs rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                      <Link to="/#workflow">مدیریت و اصلاح لایه‌ها</Link>
+                    <NavigationMenuLink
+                      render={<Link to="/#workflow" />}
+                      className="block p-2 text-xs rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      مدیریت و اصلاح لایه‌ها
                     </NavigationMenuLink>
                   </div>
                 </NavigationMenuContent>
@@ -108,27 +117,30 @@ function Header() {
               {/* وبلاگ */}
               <NavigationMenuItem>
                 <NavigationMenuLink
+                  render={<Link to="/blog" />}
                   className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
                 >
-                  <Link to="/blog">مقالات</Link>
+                  مقالات
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
               {/* تعرفه‌ها */}
               <NavigationMenuItem>
                 <NavigationMenuLink
+                  render={<Link to="/pricing" />}
                   className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
                 >
-                  <Link to="/pricing">تعرفه‌ها</Link>
+                  تعرفه‌ها
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
               {/* ارتباط با ما */}
               <NavigationMenuItem>
                 <NavigationMenuLink
+                  render={<Link to="/contact-us" />}
                   className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground`}
                 >
-                  <Link to="/contact-us">ارتباط با ما</Link>
+                  ارتباط با ما
                 </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
@@ -155,69 +167,80 @@ function Header() {
                 <span className="hidden max-w-32 truncate text-xs font-semibold sm:block">
                   {user.name}
                 </span>
-                <ChevronDown
-                  className={`size-3.5 text-muted-foreground transition-transform duration-200 ${
-                    isAccountMenuOpen ? "rotate-180" : ""
-                  }`}
-                />
+                <motion.span
+                  aria-hidden="true"
+                  animate={{ rotate: isAccountMenuOpen ? 180 : 0 }}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
+                >
+                  <ChevronDown className="size-3.5 text-muted-foreground" />
+                </motion.span>
               </Button>
 
-              {isAccountMenuOpen && (
-                <div
-                  id="landing-account-menu"
-                  role="menu"
-                  aria-label="حساب کاربری"
-                  className="absolute top-[calc(100%+0.6rem)] left-0 z-50 w-72 origin-top-left animate-in rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-xl fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 motion-reduce:animate-none"
-                >
-                  <div className="rounded-xl bg-muted/50 p-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <UserRound className="size-5" />
-                      </span>
-                      <span className="min-w-0">
-                        <strong className="block truncate text-sm">{user.name}</strong>
-                        <span className="mt-0.5 block text-xs text-muted-foreground" dir="ltr">
-                          {user.phone}
+              <AnimatePresence>
+                {isAccountMenuOpen && (
+                  <motion.div
+                    id="landing-account-menu"
+                    role="menu"
+                    aria-label="حساب کاربری"
+                    className="absolute top-[calc(100%+0.6rem)] left-0 z-50 w-72 origin-top-left rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-xl"
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{
+                      duration: shouldReduceMotion ? 0 : 0.18,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                  >
+                    <div className="rounded-xl bg-muted/50 p-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <UserRound className="size-5" />
                         </span>
-                      </span>
+                        <span className="min-w-0">
+                          <strong className="block truncate text-sm">{user.name}</strong>
+                          <span className="mt-0.5 block text-xs text-muted-foreground" dir="ltr">
+                            {user.phone}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center gap-1.5 border-t border-border/60 pt-2.5 text-[11px] text-muted-foreground">
+                        <ShieldCheck className="size-3.5 text-primary" />
+                        {user.roles.includes("admin")
+                          ? "مدیر سیستم"
+                          : user.roles.includes("writer")
+                            ? "نویسنده"
+                            : "کاربر"}
+                      </div>
                     </div>
-                    <div className="mt-3 flex items-center gap-1.5 border-t border-border/60 pt-2.5 text-[11px] text-muted-foreground">
-                      <ShieldCheck className="size-3.5 text-primary" />
-                      {user.roles.includes("admin")
-                        ? "مدیر سیستم"
-                        : user.roles.includes("writer")
-                          ? "نویسنده"
-                          : "کاربر"}
-                    </div>
-                  </div>
 
-                  <div className="mt-2 grid gap-1">
-                    <Link
-                      to="/dashboard"
-                      role="menuitem"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                      className={buttonVariants({
-                        variant: "ghost",
-                        className: "h-10 w-full justify-start gap-2 px-3 text-xs",
-                      })}
-                    >
-                      <LayoutDashboard />
-                      ورود به داشبورد
-                    </Link>
-                    <Button
-                      type="button"
-                      role="menuitem"
-                      variant="destructive"
-                      className="h-10 w-full justify-start gap-2 px-3 text-xs"
-                      disabled={isLoggingOut}
-                      onClick={() => void handleLogout()}
-                    >
-                      <LogOut />
-                      {isLoggingOut ? "در حال خروج..." : "خروج از حساب"}
-                    </Button>
-                  </div>
-                </div>
-              )}
+                    <div className="mt-2 grid gap-1">
+                      <Link
+                        to="/dashboard"
+                        role="menuitem"
+                        onClick={() => setIsAccountMenuOpen(false)}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          className: "h-10 w-full justify-start gap-2 px-3 text-xs",
+                        })}
+                      >
+                        <LayoutDashboard />
+                        ورود به داشبورد
+                      </Link>
+                      <Button
+                        type="button"
+                        role="menuitem"
+                        variant="destructive"
+                        className="h-10 w-full justify-start gap-2 px-3 text-xs"
+                        disabled={isLoggingOut}
+                        onClick={() => void handleLogout()}
+                      >
+                        <LogOut />
+                        {isLoggingOut ? "در حال خروج..." : "خروج از حساب"}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : status === "checking" ? (
             <span

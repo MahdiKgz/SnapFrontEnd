@@ -34,18 +34,26 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.clearAllMocks();
 });
+const chooseOption = async (label: string, option: string) => {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  const item = await screen.findByRole("option", { name: option });
+  fireEvent.pointerDown(item, { pointerType: "mouse" });
+  fireEvent.click(item);
+};
 it("asks for an output format and CRS before downloading, then sends only options to the server", async () => {
   render(<HealedExportButton jobId="healed-job" />);
   expect(exportFile).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "دانلود فایل ترمیم‌شده" }));
   expect(await screen.findByRole("dialog")).toBeTruthy();
-  const format = screen.getByLabelText("فرمت فایل خروجی");
-  expect(Array.from((format as HTMLSelectElement).options).map((option) => option.value)).toEqual([
-    "geojson",
-    "shapefile",
-    "dxf",
+  fireEvent.click(screen.getByRole("combobox", { name: "فرمت فایل خروجی" }));
+  expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+    "GeoJSON",
+    "Shapefile (ZIP)",
+    "DXF",
   ]);
-  fireEvent.change(format, { target: { value: "shapefile" } });
+  const shapefile = screen.getByRole("option", { name: "Shapefile (ZIP)" });
+  fireEvent.pointerDown(shapefile, { pointerType: "mouse" });
+  fireEvent.click(shapefile);
   fireEvent.change(screen.getByLabelText("سیستم مختصات مقصد"), { target: { value: "epsg:32639" } });
   fireEvent.click(screen.getByRole("button", { name: "ساخت و دانلود خروجی" }));
   await waitFor(() =>
@@ -125,9 +133,7 @@ it("exports a mixed drawing as a layered Shapefile ZIP through the conversion AP
     />,
   );
   fireEvent.click(screen.getByRole("button", { name: "خروجی ترسیم" }));
-  fireEvent.change(await screen.findByLabelText("فرمت فایل خروجی"), {
-    target: { value: "shapefile" },
-  });
+  await chooseOption("فرمت فایل خروجی", "Shapefile (ZIP)");
   fireEvent.change(screen.getByLabelText("سیستم مختصات مقصد"), { target: { value: "EPSG:32639" } });
   fireEvent.click(screen.getByRole("button", { name: "ساخت و دانلود خروجی" }));
   const fileLink = await screen.findByRole<HTMLAnchorElement>("link", {

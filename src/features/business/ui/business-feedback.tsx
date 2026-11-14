@@ -4,6 +4,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { LoaderCircle } from "lucide-react";
 
 import { Button } from "@shared/ui/button";
+import { MotionDialogBackdrop, MotionDialogPopup } from "@shared/ui/motion-dialog";
 
 export function BusinessMessage({ error, children }: { error?: boolean; children: ReactNode }) {
   return (
@@ -37,8 +38,8 @@ export function ConfirmBusinessAction({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/45" />
-        <Dialog.Popup
+        <MotionDialogBackdrop className="fixed inset-0 z-50 bg-black/45" />
+        <MotionDialogPopup
           dir="rtl"
           className="fixed left-1/2 top-1/2 z-50 w-[calc(100%_-_2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl"
         >
@@ -54,7 +55,7 @@ export function ConfirmBusinessAction({
               {busy && <LoaderCircle className="size-4 animate-spin" />}تأیید
             </Button>
           </div>
-        </Dialog.Popup>
+        </MotionDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

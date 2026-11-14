@@ -1,6 +1,8 @@
 import { Popover } from "@base-ui/react/popover";
 import { CircleHelp, X } from "lucide-react";
 
+import { MotionPopoverPopup } from "@shared/ui/motion-popover";
+
 export function ShapefileHelp() {
   return (
     <Popover.Root>
@@ -20,7 +22,7 @@ export function ShapefileHelp() {
           positionMethod="fixed"
           className="z-50"
         >
-          <Popover.Popup
+          <MotionPopoverPopup
             dir="rtl"
             className="max-h-[var(--available-height)] w-72 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-xl transition-[opacity,transform] duration-150 data-[starting-style]:translate-y-1 data-[starting-style]:opacity-0 data-[ending-style]:translate-y-1 data-[ending-style]:opacity-0 motion-reduce:transition-none"
           >
@@ -63,7 +65,7 @@ export function ShapefileHelp() {
             <p className="mt-2 text-[10px] text-muted-foreground">
               حداکثر حجم فایل آپلودی: ۵ مگابایت
             </p>
-          </Popover.Popup>
+          </MotionPopoverPopup>
         </Popover.Positioner>
       </Popover.Portal>
     </Popover.Root>

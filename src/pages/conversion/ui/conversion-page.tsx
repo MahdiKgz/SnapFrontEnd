@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { CustomSelect } from "@/shared/ui/select";
 import {
   ArrowLeftRight,
   Download,
@@ -153,17 +154,18 @@ export default function ConversionPage() {
               <label htmlFor="conversion-format" className="text-sm font-medium">
                 فرمت خروجی
               </label>
-              <select
+              <CustomSelect
                 id="conversion-format"
                 value={format}
-                onChange={(event) => setFormat(event.target.value as ConversionFormat | "")}
-                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
-              >
-                <option value="">حفظ فرمت ورودی</option>
-                <option value="geojson">GeoJSON</option>
-                <option value="shapefile">Shapefile (ZIP)</option>
-                <option value="dxf">DXF</option>
-              </select>
+                onValueChange={(value) => setFormat(value as ConversionFormat | "")}
+                options={[
+                  { value: "", label: "حفظ فرمت ورودی" },
+                  { value: "geojson", label: "GeoJSON" },
+                  { value: "shapefile", label: "Shapefile (ZIP)" },
+                  { value: "dxf", label: "DXF" },
+                ]}
+                className="h-11 w-full"
+              />
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">

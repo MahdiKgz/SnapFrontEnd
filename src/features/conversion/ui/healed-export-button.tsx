@@ -2,6 +2,8 @@ import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { MotionDialogBackdrop, MotionDialogPopup } from "@/shared/ui/motion-dialog";
+import { CustomSelect } from "@/shared/ui/select";
 import { Dialog } from "@base-ui/react/dialog";
 import type { FeatureCollection } from "geojson";
 import { Download, LoaderCircle, X } from "lucide-react";
@@ -154,19 +156,20 @@ function ExportForm({ source }: { source: ExportSource }) {
           <label htmlFor={`format-${id}`} className="text-sm font-medium">
             فرمت فایل خروجی
           </label>
-          <select
+          <CustomSelect
             id={`format-${id}`}
-            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
+            className="h-10 w-full"
             value={format}
-            onChange={(event) => {
+            onValueChange={(value) => {
               clearResult();
-              setFormat(event.target.value as ConversionFormat);
+              setFormat(value as ConversionFormat);
             }}
-          >
-            <option value="geojson">GeoJSON</option>
-            <option value="shapefile">Shapefile (ZIP)</option>
-            <option value="dxf">DXF</option>
-          </select>
+            options={[
+              { value: "geojson", label: "GeoJSON" },
+              { value: "shapefile", label: "Shapefile (ZIP)" },
+              { value: "dxf", label: "DXF" },
+            ]}
+          />
         </div>
         <div className="rounded-lg bg-muted/50 p-3 text-xs leading-6 text-muted-foreground">
           سیستم مختصات مبدأ: <bdi dir="ltr">WGS84 — EPSG:4326</bdi>
@@ -325,8 +328,8 @@ function ExportButton({
         {children}
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-90 bg-black/50 backdrop-blur-sm" />
-        <Dialog.Popup
+        <MotionDialogBackdrop className="fixed inset-0 z-90 bg-black/50 backdrop-blur-sm" />
+        <MotionDialogPopup
           dir="rtl"
           className="fixed left-1/2 top-1/2 z-100 max-h-[90dvh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-2xl"
         >
@@ -345,7 +348,7 @@ function ExportButton({
           {open && (
             <ExportForm key={"jobId" in source ? source.jobId : source.filename} source={source} />
           )}
-        </Dialog.Popup>
+        </MotionDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

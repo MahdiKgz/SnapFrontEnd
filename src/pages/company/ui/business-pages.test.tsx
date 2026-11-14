@@ -59,6 +59,12 @@ const person = {
   phone: "09123456789",
   createdAt: "2026-09-01T00:00:00Z",
 };
+const chooseOption = async (label: string, option: string) => {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  const item = await screen.findByRole("option", { name: option });
+  fireEvent.pointerDown(item, { pointerType: "mouse" });
+  fireEvent.click(item);
+};
 const companyInfo = {
   id: "company",
   name: "شرکت نمونه",
@@ -191,9 +197,7 @@ it("members can leave after confirmation and do not see company administration",
 });
 it("requires admin confirmation before sending a new plan to the server", async () => {
   render(<AdminPlansPage />);
-  fireEvent.change(screen.getByLabelText(`تغییر پلن ${person.name}`), {
-    target: { value: "advanced" },
-  });
+  await chooseOption(`تغییر پلن ${person.name}`, advanced.name);
   expect(mocks.assign).not.toHaveBeenCalled();
   fireEvent.click(await screen.findByRole("button", { name: "تأیید" }));
   await waitFor(() =>
@@ -209,8 +213,8 @@ it("sends quick search, plan filtering and page size to the server", async () =>
       expect.anything(),
     ),
   );
-  fireEvent.change(screen.getByLabelText("فیلتر پلن"), { target: { value: "advanced" } });
-  fireEvent.change(screen.getByLabelText("تعداد کاربران در صفحه"), { target: { value: "25" } });
+  await chooseOption("فیلتر پلن", advanced.name);
+  await chooseOption("تعداد کاربران در صفحه", "۲۵");
   expect(mocks.users).toHaveBeenLastCalledWith(
     { search: "0912", plan: "advanced", skip: 0, limit: 25 },
     expect.anything(),

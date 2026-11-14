@@ -26,6 +26,7 @@ import { BusinessMessage } from "@features/business";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
+import { MotionDialogBackdrop, MotionDialogPopup } from "@shared/ui/motion-dialog";
 
 const fallback = "درخواست انجام نشد. دوباره تلاش کنید.";
 
@@ -213,8 +214,8 @@ export function AccountSecurityPage() {
           }}
         >
           <Dialog.Portal>
-            <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/45" />
-            <Dialog.Popup
+            <MotionDialogBackdrop className="fixed inset-0 z-50 bg-black/45" />
+            <MotionDialogPopup
               dir="rtl"
               initialFocus={dialogTitle}
               className="fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-xl"
@@ -289,7 +290,7 @@ export function AccountSecurityPage() {
                   </div>
                 </form>
               )}
-            </Dialog.Popup>
+            </MotionDialogPopup>
           </Dialog.Portal>
         </Dialog.Root>
       </div>

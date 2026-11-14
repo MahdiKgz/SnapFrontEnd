@@ -54,7 +54,10 @@ it("shows intersection before selection and can replace an existing polyline wit
     },
   ]);
   render(<RouterProvider router={router} />);
-  fireEvent.change(screen.getByRole("combobox"), { target: { value: "image" } });
+  fireEvent.click(screen.getByRole("combobox"));
+  const image = await screen.findByRole("option", { name: "roof.tiff" });
+  fireEvent.pointerDown(image, { pointerType: "mouse" });
+  fireEvent.click(image);
 
   const suggest = await screen.findByRole<HTMLButtonElement>("button", { name: /پیشنهاد تقاطع/ });
   expect(suggest.disabled).toBe(true);

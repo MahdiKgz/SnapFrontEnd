@@ -4,6 +4,8 @@ import { Popover } from "@base-ui/react/popover";
 import { Check, ChevronUp, Globe2, Layers2, LoaderCircle, Map as MapIcon } from "lucide-react";
 import type { Map } from "maplibre-gl";
 
+import { MotionPopoverPopup } from "@shared/ui/motion-popover";
+
 import { useBasemap } from "../model/use-basemap";
 
 export function BasemapPicker({
@@ -40,7 +42,7 @@ export function BasemapPicker({
             positionMethod="fixed"
             className="z-50"
           >
-            <Popover.Popup
+            <MotionPopoverPopup
               dir="rtl"
               className="w-64 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl"
             >
@@ -97,7 +99,7 @@ export function BasemapPicker({
                   {error}
                 </p>
               )}
-            </Popover.Popup>
+            </MotionPopoverPopup>
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>

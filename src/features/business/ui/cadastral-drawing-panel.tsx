@@ -19,6 +19,7 @@ import { useBlocker } from "react-router-dom";
 import { DrawingExportButton } from "@features/conversion";
 
 import { Button } from "@shared/ui/button";
+import { CustomSelect } from "@shared/ui/select";
 
 import {
   useGetCadastralDrawingQuery,
@@ -667,20 +668,16 @@ export function CadastralDrawingPanel(props: MapProps) {
       {!!ready.length && (
         <label className="block space-y-1.5 text-xs">
           <span className="font-semibold">تصویر مبنای ترسیم</span>
-          <select
+          <CustomSelect
+            aria-label="تصویر مبنای ترسیم"
             value={selected?.id ?? ""}
-            className="block w-full rounded-lg border bg-background p-2 text-sm"
-            onChange={(event) =>
-              pending ? setNextImage(event.target.value) : switchTo(event.target.value)
-            }
-          >
-            <option value="">تصویر را انتخاب کنید</option>
-            {ready.map(({ id, name }) => (
-              <option key={id} value={id}>
-                {name}
-              </option>
-            ))}
-          </select>
+            className="w-full"
+            onValueChange={(value) => (pending ? setNextImage(value) : switchTo(value))}
+            options={[
+              { value: "", label: "تصویر را انتخاب کنید" },
+              ...ready.map(({ id, name }) => ({ value: id, label: name })),
+            ]}
+          />
         </label>
       )}
       {selected && (

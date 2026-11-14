@@ -52,6 +52,12 @@ const mount = () =>
       <AdminUsersPage />
     </MemoryRouter>,
   );
+const chooseOption = async (label: string, option: string) => {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  const item = await screen.findByRole("option", { name: option });
+  fireEvent.pointerDown(item, { pointerType: "mouse" });
+  fireEvent.click(item);
+};
 
 beforeEach(() => {
   mocks.users.mockReturnValue({ currentData: { data: list }, refetch: mocks.refetch });
@@ -101,9 +107,9 @@ it("debounces server search and resets pagination for filters and page size", as
     ),
   );
   fireEvent.click(screen.getByRole("button", { name: "بعدی" }));
-  fireEvent.change(screen.getByLabelText("فیلتر نقش"), { target: { value: "writer" } });
-  fireEvent.change(screen.getByLabelText("فیلتر پلن"), { target: { value: "pro" } });
-  fireEvent.change(screen.getByLabelText("تعداد کاربران در صفحه"), { target: { value: "25" } });
+  await chooseOption("فیلتر نقش", "نویسنده");
+  await chooseOption("فیلتر پلن", "حرفه‌ای");
+  await chooseOption("تعداد کاربران در صفحه", "۲۵");
   expect(mocks.users).toHaveBeenLastCalledWith(
     { search: "0912", plan: "pro", role: "writer", skip: 0, limit: 25 },
     expect.anything(),
@@ -295,7 +301,7 @@ it("shows loading and filtered empty states without stale rows", async () => {
       <AdminUsersPage />
     </MemoryRouter>,
   );
-  fireEvent.change(screen.getByLabelText("فیلتر نقش"), { target: { value: "writer" } });
+  await chooseOption("فیلتر نقش", "نویسنده");
   expect(screen.getByText("کاربری پیدا نشد")).toBeTruthy();
   expect(screen.getByRole("button", { name: "پاک کردن فیلترها" })).toBeTruthy();
   expect((screen.getByRole("button", { name: "بعدی" }) as HTMLButtonElement).disabled).toBe(true);

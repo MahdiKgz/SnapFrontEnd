@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { MotionDialogBackdrop, MotionDialogPopup } from "@/shared/ui/motion-dialog";
 import { Dialog } from "@base-ui/react/dialog";
 import { LoaderCircle, Search, UserPlus, X } from "lucide-react";
 
@@ -23,8 +24,8 @@ export function AddColleagueDialog({
         افزودن همکار
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" />
-        <Dialog.Popup
+        <MotionDialogBackdrop className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" />
+        <MotionDialogPopup
           dir="rtl"
           className="fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl"
         >
@@ -45,7 +46,7 @@ export function AddColleagueDialog({
               }}
             />
           )}
-        </Dialog.Popup>
+        </MotionDialogPopup>
       </Dialog.Portal>
     </Dialog.Root>
   );

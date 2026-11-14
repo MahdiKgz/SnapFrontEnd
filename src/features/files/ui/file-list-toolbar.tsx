@@ -2,6 +2,8 @@ import { useState } from "react";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { MotionPopoverPopup } from "@/shared/ui/motion-popover";
+import { CustomSelect } from "@/shared/ui/select";
 import { Popover } from "@base-ui/react/popover";
 import { RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 
@@ -40,8 +42,6 @@ export function FileListToolbar({
     draft.uploadedTo &&
     draft.uploadedFrom > draft.uploadedTo
   );
-  const selectClass =
-    "mt-1.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
     <div className="flex w-full items-center gap-2 sm:w-auto">
       <div className="relative min-w-0 flex-1 sm:w-56">
@@ -101,7 +101,7 @@ export function FileListToolbar({
             positionMethod="fixed"
             className="z-50"
           >
-            <Popover.Popup
+            <MotionPopoverPopup
               dir="rtl"
               aria-label="فیلتر فایل‌ها"
               className="w-80 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-xl"
@@ -126,32 +126,32 @@ export function FileListToolbar({
                 <div className="grid grid-cols-2 gap-3">
                   <label className="text-xs">
                     نوع فایل
-                    <select
-                      className={selectClass}
+                    <CustomSelect
+                      aria-label="نوع فایل"
+                      className="mt-1.5 w-full px-2 text-xs"
                       value={draft.fileType}
-                      onChange={(e) => setDraft({ ...draft, fileType: e.target.value })}
-                    >
-                      <option value="">همه</option>
-                      {["geojson", "json", "kml", "kmz", "shp", "zip", "dwg", "dgn", "dxf"].map(
-                        (value) => (
-                          <option key={value} value={value}>
-                            {value.toUpperCase()}
-                          </option>
+                      onValueChange={(value) => setDraft({ ...draft, fileType: value })}
+                      options={[
+                        { value: "", label: "همه" },
+                        ...["geojson", "json", "kml", "kmz", "shp", "zip", "dwg", "dgn", "dxf"].map(
+                          (value) => ({ value, label: value.toUpperCase() }),
                         ),
-                      )}
-                    </select>
+                      ]}
+                    />
                   </label>
                   <label className="text-xs">
                     خطاهای شناسایی‌شده
-                    <select
-                      className={selectClass}
+                    <CustomSelect
+                      aria-label="خطاهای شناسایی‌شده"
+                      className="mt-1.5 w-full px-2 text-xs"
                       value={draft.hasIssues}
-                      onChange={(e) => setDraft({ ...draft, hasIssues: e.target.value })}
-                    >
-                      <option value="">همه</option>
-                      <option value="true">دارای خطا</option>
-                      <option value="false">بدون خطا</option>
-                    </select>
+                      onValueChange={(value) => setDraft({ ...draft, hasIssues: value })}
+                      options={[
+                        { value: "", label: "همه" },
+                        { value: "true", label: "دارای خطا" },
+                        { value: "false", label: "بدون خطا" },
+                      ]}
+                    />
                   </label>
                   <label className="col-span-2 text-xs">
                     بارگذاری از تاریخ
@@ -203,7 +203,7 @@ export function FileListToolbar({
                   </Button>
                 </footer>
               </form>
-            </Popover.Popup>
+            </MotionPopoverPopup>
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>

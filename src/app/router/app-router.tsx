@@ -1,23 +1,7 @@
-import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import type { ReactNode } from "react";
 
-import { AccountSecurityPage } from "@pages/account-security";
-import { AdminPlansPage } from "@pages/admin-plans";
-import { AdminReportsPage } from "@pages/admin-reports";
-import { AdminUsersPage } from "@pages/admin-users";
-import { ArticlePage } from "@pages/article";
-import { BlogPage } from "@pages/blog";
-import { CompanyPage } from "@pages/company";
-import { ContactPage } from "@pages/contact";
-import { ConversionPage } from "@pages/conversion";
-import { DashboardFilesPage } from "@pages/dashboard-files";
-import { DashboardOverviewPage } from "@pages/dashboard-overview";
-import { HomePage } from "@pages/home";
-import { LoginPage } from "@pages/login";
-import { MapPage } from "@pages/map";
-import { ForgotPasswordPage, ResetPasswordPage } from "@pages/password-recovery";
-import { PricingPage } from "@pages/pricing";
-import { RegisterPage } from "@pages/register";
-import { WriterArticlesPage } from "@pages/writer-articles";
+import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
 
 import { AuthLayout } from "@widgets/auth-layout";
 import { DashboardLayout } from "@widgets/dashboard-layout";
@@ -25,13 +9,91 @@ import { PublicLayout } from "@widgets/public-layout";
 
 import { ProtectedRoute, PublicOnlyRoute } from "@features/auth";
 
+const AccountSecurityPage = lazy(() =>
+  import("@pages/account-security").then(({ AccountSecurityPage }) => ({
+    default: AccountSecurityPage,
+  })),
+);
+const AdminPlansPage = lazy(() =>
+  import("@pages/admin-plans").then(({ AdminPlansPage }) => ({ default: AdminPlansPage })),
+);
+const AdminReportsPage = lazy(() =>
+  import("@pages/admin-reports").then(({ AdminReportsPage }) => ({ default: AdminReportsPage })),
+);
+const AdminUsersPage = lazy(() =>
+  import("@pages/admin-users").then(({ AdminUsersPage }) => ({ default: AdminUsersPage })),
+);
+const ArticlePage = lazy(() =>
+  import("@pages/article").then(({ ArticlePage }) => ({ default: ArticlePage })),
+);
+const BlogPage = lazy(() => import("@pages/blog").then(({ BlogPage }) => ({ default: BlogPage })));
+const CompanyPage = lazy(() =>
+  import("@pages/company").then(({ CompanyPage }) => ({ default: CompanyPage })),
+);
+const ContactPage = lazy(() =>
+  import("@pages/contact").then(({ ContactPage }) => ({ default: ContactPage })),
+);
+const ConversionPage = lazy(() =>
+  import("@pages/conversion").then(({ ConversionPage }) => ({ default: ConversionPage })),
+);
+const DashboardFilesPage = lazy(() =>
+  import("@pages/dashboard-files").then(({ DashboardFilesPage }) => ({
+    default: DashboardFilesPage,
+  })),
+);
+const DashboardOverviewPage = lazy(() =>
+  import("@pages/dashboard-overview").then(({ DashboardOverviewPage }) => ({
+    default: DashboardOverviewPage,
+  })),
+);
+const HomePage = lazy(() => import("@pages/home").then(({ HomePage }) => ({ default: HomePage })));
+const LoginPage = lazy(() =>
+  import("@pages/login").then(({ LoginPage }) => ({ default: LoginPage })),
+);
+const MapPage = lazy(() => import("@pages/map").then(({ MapPage }) => ({ default: MapPage })));
+const ForgotPasswordPage = lazy(() =>
+  import("@pages/password-recovery").then(({ ForgotPasswordPage }) => ({
+    default: ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("@pages/password-recovery").then(({ ResetPasswordPage }) => ({
+    default: ResetPasswordPage,
+  })),
+);
+const PricingPage = lazy(() =>
+  import("@pages/pricing").then(({ PricingPage }) => ({ default: PricingPage })),
+);
+const RegisterPage = lazy(() =>
+  import("@pages/register").then(({ RegisterPage }) => ({ default: RegisterPage })),
+);
+const WriterArticlesPage = lazy(() =>
+  import("@pages/writer-articles").then(({ WriterArticlesPage }) => ({
+    default: WriterArticlesPage,
+  })),
+);
+
+function RouteLoading() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-h-48 w-full items-center justify-center text-sm text-muted-foreground"
+    >
+      در حال بارگذاری صفحه…
+    </div>
+  );
+}
+
+const loadPage = (page: ReactNode) => <Suspense fallback={<RouteLoading />}>{page}</Suspense>;
+
 export const appRouter = createBrowserRouter([
   {
     path: "/map",
-    element: (
+    element: loadPage(
       <ProtectedRoute>
         <MapPage />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
 
@@ -40,20 +102,20 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <HomePage />,
+        element: loadPage(<HomePage />),
       },
       {
         path: "blog",
-        element: <BlogPage />,
+        element: loadPage(<BlogPage />),
       },
-      { path: "blog/:slug", element: <ArticlePage /> },
+      { path: "blog/:slug", element: loadPage(<ArticlePage />) },
       {
         path: "contact-us",
-        element: <ContactPage />,
+        element: loadPage(<ContactPage />),
       },
       {
         path: "pricing",
-        element: <PricingPage />,
+        element: loadPage(<PricingPage />),
       },
     ],
   },
@@ -67,17 +129,20 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         path: "/login",
-        element: <LoginPage />,
+        element: loadPage(<LoginPage />),
       },
-      { path: "/auth/forgot", element: <ForgotPasswordPage /> },
+      { path: "/auth/forgot", element: loadPage(<ForgotPasswordPage />) },
       {
         path: "/register",
-        element: <RegisterPage />,
+        element: loadPage(<RegisterPage />),
       },
     ],
   },
 
-  { element: <AuthLayout />, children: [{ path: "/auth/reset", element: <ResetPasswordPage /> }] },
+  {
+    element: <AuthLayout />,
+    children: [{ path: "/auth/reset", element: loadPage(<ResetPasswordPage />) }],
+  },
 
   {
     path: "/auth",
@@ -98,28 +163,28 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <DashboardOverviewPage />,
+        element: loadPage(<DashboardOverviewPage />),
       },
       {
         path: "overview",
-        element: <DashboardOverviewPage />,
+        element: loadPage(<DashboardOverviewPage />),
       },
       {
         path: "files",
-        element: <DashboardFilesPage />,
+        element: loadPage(<DashboardFilesPage />),
       },
-      { path: "company", element: <CompanyPage /> },
-      { path: "security", element: <AccountSecurityPage /> },
+      { path: "company", element: loadPage(<CompanyPage />) },
+      { path: "security", element: loadPage(<AccountSecurityPage />) },
       {
         path: "convert",
-        element: <ConversionPage />,
+        element: loadPage(<ConversionPage />),
       },
       {
         path: "articles",
-        element: (
+        element: loadPage(
           <ProtectedRoute requiredRole="writer">
             <WriterArticlesPage />
-          </ProtectedRoute>
+          </ProtectedRoute>,
         ),
       },
       {
@@ -131,14 +196,14 @@ export const appRouter = createBrowserRouter([
         ),
         children: [
           { index: true, element: <Navigate to="users" replace /> },
-          { path: "users", element: <AdminUsersPage /> },
-          { path: "plans", element: <AdminPlansPage /> },
-          { path: "reports", element: <AdminReportsPage /> },
+          { path: "users", element: loadPage(<AdminUsersPage />) },
+          { path: "plans", element: loadPage(<AdminPlansPage />) },
+          { path: "reports", element: loadPage(<AdminReportsPage />) },
         ],
       },
       {
         path: "map",
-        element: <MapPage />,
+        element: loadPage(<MapPage />),
       },
     ],
   },

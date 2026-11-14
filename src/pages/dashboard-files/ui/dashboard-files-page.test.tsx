@@ -31,6 +31,13 @@ function LocationProbe() {
   return <output aria-label="مسیر فعلی">{`${location.pathname}${location.search}`}</output>;
 }
 
+const chooseOption = async (label: string, option: string) => {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  const item = await screen.findByRole("option", { name: option });
+  fireEvent.pointerDown(item, { pointerType: "mouse" });
+  fireEvent.click(item);
+};
+
 vi.mock("@features/files/api/files-api", () => ({
   DEFAULT_FILES_LIMIT: 10,
   useGetUserFilesQuery: getFiles,
@@ -113,7 +120,7 @@ describe("FileManagementDashboard", () => {
 
     fireEvent.click(screen.getByLabelText("مشاهده Parcel layer"));
     const dialog = screen.getByRole("dialog", { name: "جزئیات فایل" });
-    expect(dialog.className).toContain("animate-in");
+    expect(dialog.style.transform).toContain("scale");
     expect(screen.getByText("DUPLICATE_VERTEX")).toBeTruthy();
     expect(screen.getByText("رأس‌های تکراری حذف‌شده")).toBeTruthy();
     expect(
@@ -123,7 +130,6 @@ describe("FileManagementDashboard", () => {
     ).toBe(false);
 
     fireEvent.click(within(dialog).getByRole("button", { name: "بستن" }));
-    expect(dialog.className).toContain("animate-out");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "جزئیات فایل" })).toBeNull());
   });
 
@@ -186,7 +192,7 @@ describe("FileManagementDashboard", () => {
     await waitFor(() => expect(deleteFile).toHaveBeenCalledWith(summary.id));
   });
 
-  it("requests the selected page size and resets the page and table scroll", () => {
+  it("requests the selected page size and resets the page and table scroll", async () => {
     const files = Array.from({ length: 31 }, (_, index) => ({
       ...summary,
       id: String(index),
@@ -213,9 +219,7 @@ describe("FileManagementDashboard", () => {
 
     const scrollRegion = screen.getByRole("region", { name: "جدول فایل‌ها" });
     scrollRegion.scrollTop = 300;
-    fireEvent.change(screen.getByRole("combobox", { name: "تعداد در صفحه" }), {
-      target: { value: "20" },
-    });
+    await chooseOption("تعداد در صفحه", "۲۰");
     expect(getFiles).toHaveBeenLastCalledWith({ skip: 0, limit: 20 });
     expect(scrollRegion.scrollTop).toBe(0);
     expect(screen.getByText("صفحه ۱ از ۲")).toBeTruthy();
@@ -226,9 +230,7 @@ describe("FileManagementDashboard", () => {
     expect(within(scrollRegion).getAllByRole("row")).toHaveLength(12);
     expect(screen.getByRole("button", { name: "صفحه بعد" }).hasAttribute("disabled")).toBe(true);
 
-    fireEvent.change(screen.getByRole("combobox", { name: "تعداد در صفحه" }), {
-      target: { value: "50" },
-    });
+    await chooseOption("تعداد در صفحه", "۵۰");
     expect(getFiles).toHaveBeenLastCalledWith({ skip: 0, limit: 50 });
     expect(screen.getByText("صفحه ۱ از ۱")).toBeTruthy();
     expect(within(scrollRegion).getAllByRole("row")).toHaveLength(32);
@@ -259,9 +261,7 @@ describe("FileManagementDashboard", () => {
         <FileManagementDashboard />
       </MemoryRouter>,
     );
-    fireEvent.change(screen.getByRole("combobox", { name: "تعداد در صفحه" }), {
-      target: { value: "20" },
-    });
+    await chooseOption("تعداد در صفحه", "۲۰");
     fireEvent.click(screen.getByRole("button", { name: "صفحه بعد" }));
     expect(screen.getByText("صفحه ۲ از ۲")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "حذف File 20" }));
@@ -313,11 +313,9 @@ describe("FileManagementDashboard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "صفحه بعد" }));
     fireEvent.click(screen.getByRole("button", { name: "فیلتر فایل‌ها" }));
-    const type = await screen.findByRole("combobox", { name: "نوع فایل" });
-    fireEvent.change(type, { target: { value: "geojson" } });
-    fireEvent.change(screen.getByRole("combobox", { name: "خطاهای شناسایی‌شده" }), {
-      target: { value: "false" },
-    });
+    await screen.findByRole("combobox", { name: "نوع فایل" });
+    await chooseOption("نوع فایل", "GEOJSON");
+    await chooseOption("خطاهای شناسایی‌شده", "بدون خطا");
     fireEvent.change(screen.getByLabelText("بارگذاری از تاریخ"), {
       target: { value: "2026-09-01" },
     });
@@ -359,9 +357,8 @@ describe("FileManagementDashboard", () => {
       </MemoryRouter>,
     );
     fireEvent.click(screen.getByRole("button", { name: "فیلتر فایل‌ها" }));
-    fireEvent.change(await screen.findByRole("combobox", { name: "نوع فایل" }), {
-      target: { value: "kml" },
-    });
+    await screen.findByRole("combobox", { name: "نوع فایل" });
+    await chooseOption("نوع فایل", "KML");
     fireEvent.click(screen.getByRole("button", { name: "اعمال فیلترها" }));
     expect(screen.getByText("فایلی مطابق جستجو و فیلترها پیدا نشد")).toBeTruthy();
     expect(screen.queryByText("هنوز فایلی ندارید")).toBeNull();
